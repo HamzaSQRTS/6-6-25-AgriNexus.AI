@@ -1,0 +1,332 @@
+/* admin.css */
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-dim);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.sidebar-logo-icon {
+  color: var(--emerald-400);
+  font-size: 1.5rem;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover, .nav-item.active {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+  border-left: 3px solid var(--emerald-400);
+}
+
+.nav-icon {
+  width: 20px;
+  text-align: center;
+}
+.nav-item.active .nav-icon {
+  color: var(--emerald-400);
+}
+
+.sidebar-footer {
+  padding: 1.25rem;
+  border-top: 1px solid var(--border-dim);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--emerald-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+.user-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.user-role {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.logout-btn {
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+.logout-btn:hover {
+  color: var(--red-500);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-void);
+  overflow: hidden;
+}
+
+.topbar {
+  height: 70px;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--border-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.topbar-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.content-area {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.view-section {
+  display: none;
+  animation: fadeIn 0.4s ease forwards;
+}
+.view-section.active {
+  display: block;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: transform 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-light);
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+.stat-icon.green { background: rgba(16, 185, 129, 0.1); color: var(--emerald-400); }
+.stat-icon.blue { background: rgba(59, 130, 246, 0.1); color: var(--blue-500); }
+.stat-icon.purple { background: rgba(139, 92, 246, 0.1); color: var(--purple-500); }
+.stat-icon.orange { background: rgba(249, 115, 22, 0.1); color: var(--orange-500); }
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Charts */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.chart-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-header {
+  margin-bottom: 1rem;
+}
+.chart-title {
+  font-size: 1.125rem;
+}
+
+.chart-container-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
+  flex: 1;
+}
+
+/* Tables */
+.table-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.table-search {
+  position: relative;
+  width: 300px;
+}
+.table-search .search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+.table-search .form-input {
+  padding-left: 2.5rem;
+  border-radius: 99px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.admin-table th {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.user-row-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.user-row-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-surface-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.empty-state .icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+.empty-state h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}

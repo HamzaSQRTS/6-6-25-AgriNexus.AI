@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Dashboard — AgriNexus.Ai</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/farmer.css">
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="sidebar-logo">
+          <div class="sidebar-logo-icon"><i class="fa-solid fa-leaf"></i></div>
+          <div class="sidebar-logo-text">AgriNexus<span>.Ai</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-target="view-analytics">
+          <i class="fa-solid fa-chart-pie nav-icon"></i> Farm Analytics
+        </a>
+        <a class="nav-item" data-target="view-chat">
+          <i class="fa-solid fa-message nav-icon"></i> AI Advisory
+        </a>
+        <a class="nav-item" data-target="view-agronomy">
+          <i class="fa-solid fa-seedling nav-icon"></i> Smart Agronomy
+        </a>
+        <a class="nav-item" data-target="view-upload">
+          <i class="fa-solid fa-cloud-arrow-up nav-icon"></i> Data Upload
+        </a>
+        <a class="nav-item" data-target="view-history">
+          <i class="fa-solid fa-clock-rotate-left nav-icon"></i> Query History
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="user-initial">F</div>
+          <div class="user-info">
+            <div class="user-name truncate" id="user-name-display">Farmer User</div>
+            <div class="user-role">Farmer Account</div>
+          </div>
+          <button class="logout-btn" id="btn-logout" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <header class="topbar">
+        <div class="topbar-title" id="topbar-title">
+          <i class="fa-solid fa-chart-pie text-emerald-400"></i> Farm Analytics
+        </div>
+      </header>
+
+      <div class="content-area">
+        
+        <!-- View: Analytics Dashboard -->
+        <section id="view-analytics" class="view-section active">
+          
+          <!-- Empty State (Shown initially) -->
+          <div id="analytics-empty-state" class="empty-state">
+            <i class="fa-solid fa-chart-pie icon text-muted"></i>
+            <h4>Awaiting Farm Data</h4>
+            <p>Upload your soil reports or yield data in the <strong>Data Upload</strong> tab to generate your analytics dashboard.</p>
+          </div>
+
+          <!-- Analytics Content (Hidden initially) -->
+          <div id="analytics-content" class="hidden">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon green"><i class="fa-solid fa-seedling"></i></div>
+                <div class="stat-content">
+                  <div class="stat-value" id="stat-health">--</div>
+                  <div class="stat-label">Crop Health Score</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon blue"><i class="fa-solid fa-droplet"></i></div>
+                <div class="stat-content">
+                  <div class="stat-value" id="stat-moisture">--</div>
+                  <div class="stat-label">Avg Soil Moisture</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon orange"><i class="fa-solid fa-sun"></i></div>
+                <div class="stat-content">
+                  <div class="stat-value" id="stat-temp">--</div>
+                  <div class="stat-label">Current Temp</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="charts-grid">
+              <div class="chart-card">
+                <div class="chart-header">
+                  <h4 class="chart-title">Estimated Yield Forecast (Tons)</h4>
+                </div>
+                <div class="chart-container-wrapper">
+                  <canvas id="yieldChart"></canvas>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-header">
+                  <h4 class="chart-title">Nutrient Deficiencies</h4>
+                </div>
+                <div class="chart-container-wrapper">
+                  <canvas id="nutrientChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Chat (Agentic AI) -->
+        <section id="view-chat" class="view-section">
+          <div class="chat-container">
+            
+            <div class="chat-history" id="chat-history">
+              <!-- Welcome Message -->
+              <div class="chat-msg ai">
+                <div class="chat-avatar" style="background: rgba(20, 184, 166, 0.1); color: var(--teal-400); border: 1px solid rgba(20, 184, 166, 0.3);"><i class="fa-solid fa-leaf"></i></div>
+                <div class="chat-bubble">
+                  Hello! I am your AgriNexus AI Advisor. I can analyze soil reports, diagnose plant diseases from images, and recommend precision fertilizer schedules. How can I assist you today?
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-input-area">
+              <!-- Context selection form -->
+              <div class="chat-context-form">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                <label class="panel-label" style="font-size: 0.7rem;">Your District (Pakistan)</label>
+                <select class="form-input" id="chat-city" style="padding: 0.375rem 0.75rem; font-size: 0.825rem; height: 34px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-dim); color: var(--text-primary); border-radius: 6px;">
+                  <option value="">-- Select District (Optional) --</option>
+                </select>
+              </div>
+              <div style="width: 150px; display: flex; flex-direction: column; gap: 0.25rem;">
+                <label class="panel-label" style="font-size: 0.7rem;">Land Size (Acres)</label>
+                <input type="number" class="form-input" id="chat-land-size" placeholder="e.g. 15" style="padding: 0.375rem 0.75rem; font-size: 0.825rem; height: 34px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-dim); color: var(--text-primary); border-radius: 6px;" min="1" max="10000">
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                <input type="checkbox" id="chat-web-search" style="width:16px; height:16px;"/>
+                <label class="panel-label" for="chat-web-search" style="font-size: 0.7rem; margin:0;">Enable web search (agri‑focused)</label>
+              </div>
+              </div>
+
+              <div class="chat-suggestions">
+
+              </div>
+              
+              <form class="chat-form" id="chat-form">
+                <button type="button" class="btn-icon text-muted" title="Attach file (moves to upload)">
+                  <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <textarea class="chat-input" id="chat-input" placeholder="Ask about crops, diseases, or soil..." rows="1"></textarea>
+                <div class="chat-actions">
+                  <button type="submit" class="btn btn-primary btn-icon" id="btn-send">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </button>
+                </div>
+              </form>
+            </div>
+            
+          </div>
+        </section>
+
+        <!-- View: Upload -->
+        <section id="view-upload" class="view-section">
+          
+          <div class="upload-zone" id="drop-zone">
+            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+            <h3 class="upload-title">Upload Farm Data & Reports</h3>
+            <p class="upload-subtitle">Drag and drop files here, or click to browse</p>
+            
+            <div class="upload-formats">
+              <span class="badge badge-green"><i class="fa-solid fa-file-pdf"></i> PDF</span>
+              <span class="badge badge-blue"><i class="fa-solid fa-file-word"></i> DOCX</span>
+              <span class="badge badge-purple"><i class="fa-solid fa-image"></i> IMAGES (OCR)</span>
+              <span class="badge badge-yellow"><i class="fa-solid fa-file-csv"></i> CSV</span>
+            </div>
+            
+            <input type="file" id="file-input" class="hidden" multiple accept=".pdf,.doc,.docx,.txt,.csv,.jpg,.jpeg,.png">
+          </div>
+
+          <div class="file-manager">
+            <div class="file-manager-header">
+              <h4 class="font-bold text-sm">Uploaded Documents</h4>
+              <button class="btn btn-ghost btn-sm" id="btn-clear-files">Clear All</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="file-table" id="file-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Size</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="file-list-body">
+                  <!-- Files dynamically added here -->
+                  <tr class="empty-row">
+                    <td colspan="5" class="text-center text-muted" style="padding: 24px;">No files uploaded yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- View: Smart Agronomy -->
+        <section id="view-agronomy" class="view-section">
+          <!-- Top Row: City Selection and Quick Picks -->
+          <div class="agronomy-topbar-panel">
+            <div class="dropdown-container" style="width: 100%;">
+              <label class="panel-label">Select Agricultural Zone</label>
+              <div id="city-dropdown-host"></div>
+            </div>
+          </div>
+
+          <!-- Main Layout Grid -->
+          <div class="agronomy-main-grid">
+            <!-- Left Side: Weather and Soil Inputs -->
+            <div class="agronomy-left-column">
+              <!-- Live Weather Card -->
+              <div class="agronomy-panel-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-cloud-sun text-teal-400"></i> Live Weather</h3>
+                </div>
+                <div id="weather-host"></div>
+              </div>
+
+              <!-- District crop stats -->
+              <div class="agronomy-panel-card hidden" id="district-stats-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-chart-simple text-teal-400"></i> District Production stats (2022-23)</h3>
+                </div>
+                <div id="district-stats-host"></div>
+              </div>
+
+              <!-- Soil Parameters Controls -->
+              <div class="agronomy-panel-card">
+                <div class="panel-card-header justify-between">
+                  <h3><i class="fa-solid fa-sliders text-teal-400"></i> Soil Controls</h3>
+                  <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-soil">
+                    <i class="fa-solid fa-undo"></i> Reset to Defaults
+                  </button>
+                </div>
+                <div class="soil-sliders-form">
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span>pH (Acidity/Alkalinity)</span>
+                      <span class="slider-val-badge" id="val-soil-ph">6.5</span>
+                    </div>
+                    <input type="range" class="form-range" id="soil-ph" min="3.5" max="9.5" step="0.1" value="6.5">
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span>Soil Moisture (%)</span>
+                      <span class="slider-val-badge" id="val-soil-moisture">35%</span>
+                    </div>
+                    <input type="range" class="form-range" id="soil-moisture" min="5" max="95" step="1" value="35">
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span>Organic Matter (%)</span>
+                      <span class="slider-val-badge" id="val-soil-om">3.0%</span>
+                    </div>
+                    <input type="range" class="form-range" id="soil-om" min="0.5" max="10.0" step="0.1" value="3.0">
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span>Drainage Rate (%)</span>
+                      <span class="slider-val-badge" id="val-soil-drainage">50%</span>
+                    </div>
+                    <input type="range" class="form-range" id="soil-drainage" min="10" max="90" step="5" value="50">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Classification & Recommendations -->
+            <div class="agronomy-right-column">
+              <!-- Soil Classifier Output Panel -->
+              <div class="agronomy-panel-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-seedling text-teal-400"></i> Soil Diagnostics</h3>
+                </div>
+                <div id="soil-host"></div>
+              </div>
+
+              <!-- Crop Recommendations Output Panel -->
+              <div class="agronomy-panel-card">
+                <div id="crops-host"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View: History (Placeholder) -->
+        <section id="view-history" class="view-section">
+          <div class="empty-state">
+            <i class="fa-solid fa-clock-rotate-left icon text-muted"></i>
+            <h4>No Query History</h4>
+            <p>Your past AI conversations and generated reports will appear here.</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application Logic -->
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/farmer.js"></script>
+
+</body>
+</html>
