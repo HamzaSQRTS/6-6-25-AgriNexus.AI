@@ -41,12 +41,6 @@
         <a class="nav-item" data-target="view-plant-health">
           <i class="fa-solid fa-notes-medical nav-icon"></i> Plant Identification and Health
         </a>
-        <a class="nav-item" data-target="view-upload">
-          <i class="fa-solid fa-cloud-arrow-up nav-icon"></i> Data Upload
-        </a>
-        <a class="nav-item" data-target="view-history">
-          <i class="fa-solid fa-clock-rotate-left nav-icon"></i> Query History
-        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -145,31 +139,29 @@
               </div>
             </div>
 
-            <div class="chat-input-area">
-              <!-- Context selection form -->
-              <div class="chat-context-form">
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
-                <label class="panel-label" style="font-size: 0.7rem;">Your District (Pakistan)</label>
-                <select class="form-input" id="chat-city" style="padding: 0.375rem 0.75rem; font-size: 0.825rem; height: 34px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-dim); color: var(--text-primary); border-radius: 6px;">
-                  <option value="">-- Select District (Optional) --</option>
-                </select>
+            <!-- Slide-in Query History Overlay inside Chat -->
+            <div id="chat-history-overlay" class="chat-history-overlay hidden">
+              <div class="overlay-header">
+                <h4><i class="fa-solid fa-clock-rotate-left mr-2"></i> Query History</h4>
+                <button type="button" class="btn btn-ghost btn-sm" id="btn-close-chat-history"><i class="fa-solid fa-xmark"></i></button>
               </div>
-              <div style="width: 150px; display: flex; flex-direction: column; gap: 0.25rem;">
-                <label class="panel-label" style="font-size: 0.7rem;">Land Size (Acres)</label>
-                <input type="number" class="form-input" id="chat-land-size" placeholder="e.g. 15" style="padding: 0.375rem 0.75rem; font-size: 0.825rem; height: 34px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-dim); color: var(--text-primary); border-radius: 6px;" min="1" max="10000">
+              <div class="overlay-list" id="chat-history-list">
+                <div class="text-center text-muted" style="padding: 20px;">Loading query history...</div>
               </div>
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
-                <input type="checkbox" id="chat-web-search" style="width:16px; height:16px;"/>
-                <label class="panel-label" for="chat-web-search" style="font-size: 0.7rem; margin:0;">Enable web search (agri‑focused)</label>
-              </div>
-              </div>
+            </div>
 
+            <div class="chat-input-area">
+              <div id="chat-document-shelf" class="chat-document-shelf hidden"></div>
               <div class="chat-suggestions">
 
               </div>
               
               <form class="chat-form" id="chat-form">
-                <button type="button" class="btn-icon text-muted" title="Attach file (moves to upload)">
+                <input type="file" id="chat-file-input" class="hidden" accept=".pdf,.doc,.docx,.txt,.csv,.jpg,.jpeg,.png">
+                <button type="button" class="btn-icon text-muted" id="btn-toggle-chat-history" title="View Query History">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </button>
+                <button type="button" class="btn-icon text-muted" id="btn-chat-attach" title="Attach file to chat">
                   <i class="fa-solid fa-paperclip"></i>
                 </button>
                 <textarea class="chat-input" id="chat-input" placeholder="Ask about crops, diseases, or soil..." rows="1"></textarea>
@@ -182,52 +174,6 @@
             </div>
             
           </div>
-        </section>
-
-        <!-- View: Upload -->
-        <section id="view-upload" class="view-section">
-          
-          <div class="upload-zone" id="drop-zone">
-            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-            <h3 class="upload-title">Upload Farm Data & Reports</h3>
-            <p class="upload-subtitle">Drag and drop files here, or click to browse</p>
-            
-            <div class="upload-formats">
-              <span class="badge badge-green"><i class="fa-solid fa-file-pdf"></i> PDF</span>
-              <span class="badge badge-blue"><i class="fa-solid fa-file-word"></i> DOCX</span>
-              <span class="badge badge-purple"><i class="fa-solid fa-image"></i> IMAGES (OCR)</span>
-              <span class="badge badge-yellow"><i class="fa-solid fa-file-csv"></i> CSV</span>
-            </div>
-            
-            <input type="file" id="file-input" class="hidden" multiple accept=".pdf,.doc,.docx,.txt,.csv,.jpg,.jpeg,.png">
-          </div>
-
-          <div class="file-manager">
-            <div class="file-manager-header">
-              <h4 class="font-bold text-sm">Uploaded Documents</h4>
-              <button class="btn btn-ghost btn-sm" id="btn-clear-files">Clear All</button>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="file-table" id="file-table">
-                <thead>
-                  <tr>
-                    <th>File Name</th>
-                    <th>Size</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="file-list-body">
-                  <!-- Files dynamically added here -->
-                  <tr class="empty-row">
-                    <td colspan="5" class="text-center text-muted" style="padding: 24px;">No files uploaded yet.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
         </section>
 
         <!-- View: Smart Agronomy -->
@@ -485,14 +431,7 @@
           </div>
         </section>
 
-        <!-- View: History (Placeholder) -->
-        <section id="view-history" class="view-section">
-          <div class="empty-state">
-            <i class="fa-solid fa-clock-rotate-left icon text-muted"></i>
-            <h4>No Query History</h4>
-            <p>Your past AI conversations and generated reports will appear here.</p>
-          </div>
-        </section>
+
 
       </div>
     </main>

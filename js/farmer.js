@@ -4,6 +4,7 @@ import { initSmartAgronomy } from './smart_agronomy/main.js';
 
 let yieldChart = null;
 let nutrientChart = null;
+const uploadedDocuments = new Map();
 
 function destroyCharts() {
   if (yieldChart) {
@@ -183,22 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Populate the chat city dropdown from regions.json
-  const chatCitySelect = document.getElementById('chat-city');
-  if (chatCitySelect) {
-    fetch('data/regions.json')
-      .then(res => res.json())
-      .then(regions => {
-        regions.sort((a, b) => a.name.localeCompare(b.name));
-        regions.forEach(r => {
-          const opt = document.createElement('option');
-          opt.value = r.name;
-          opt.textContent = `${r.name} (${r.country.split('(')[1]?.replace(')', '') || r.country})`;
-          chatCitySelect.appendChild(opt);
-        });
-      })
-      .catch(e => console.warn('Failed to load regions for chat dropdown:', e));
-  }
+
 
   const chatForm = document.getElementById('chat-form');
   const chatInput = document.getElementById('chat-input');
@@ -215,18 +201,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const aiThinkingId = 'msg-' + Date.now();
       appendMessage('ai', '<i class="fa-solid fa-ellipsis fa-bounce"></i>', aiThinkingId);
 
-      const city = document.getElementById('chat-city')?.value || null;
-      const landSizeVal = document.getElementById('chat-land-size')?.value;
-      const landSize = landSizeVal ? parseFloat(landSizeVal) : null;
+      const selectedCheckboxes = document.querySelectorAll('.doc-checkbox:checked');
+      const selectedFiles = Array.from(selectedCheckboxes).map(cb => cb.dataset.filename);
+      const activeDocs = selectedFiles.map(filename => ({
+        filename: filename,
+        text: uploadedDocuments.get(filename) || ""
+      }));
 
       try {
         const response = await apiRequest('/chat/query', {
           method: 'POST',
           body: JSON.stringify({
             query: message,
-            city: city,
-            land_size: landSize,
-            use_web_search: document.getElementById('chat-web-search')?.checked || false
+            selected_files: selectedFiles,
+            active_docs: activeDocs
           }),
         });
         const el = document.getElementById(aiThinkingId);
@@ -263,39 +251,75 @@ document.addEventListener('DOMContentLoaded', () => {
         chatForm.dispatchEvent(new Event('submit'));
       });
     });
+
+    // Toggle Chat Overlay Query History inside AI Advisory
+    const toggleOverlayBtn = document.getElementById('btn-toggle-chat-history');
+    const closeOverlayBtn = document.getElementById('btn-close-chat-history');
+    const historyOverlay = document.getElementById('chat-history-overlay');
+    const historyListContainer = document.getElementById('chat-history-list');
+
+    const loadChatHistoryOverlay = async () => {
+      try {
+        historyListContainer.innerHTML = '<div class="text-center text-muted" style="padding: 20px;"><i class="fa-solid fa-circle-notch fa-spin text-teal-400"></i> Loading queries...</div>';
+        const history = await apiRequest('/chat/history');
+        if (!history || !history.length) {
+          historyListContainer.innerHTML = '<div class="text-center text-muted" style="padding: 20px;">No query history yet.</div>';
+          return;
+        }
+        historyListContainer.innerHTML = history.map(item => {
+          const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString() : "";
+          const queryText = item.query || "";
+          return `
+            <div class="overlay-item" data-query="${queryText.replace(/"/g, '&quot;')}">
+              <div class="item-query">${queryText}</div>
+              <div class="item-date">${dateStr}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Bind click events on items to auto-populate chat input
+        historyListContainer.querySelectorAll('.overlay-item').forEach(item => {
+          item.addEventListener('click', () => {
+            chatInput.value = item.dataset.query;
+            historyOverlay.classList.add('hidden');
+          });
+        });
+      } catch (err) {
+        historyListContainer.innerHTML = '<div class="text-center text-muted" style="padding: 20px; color: var(--red-400);">Failed to load history.</div>';
+      }
+    };
+
+    if (toggleOverlayBtn && historyOverlay) {
+      toggleOverlayBtn.addEventListener('click', () => {
+        const isHidden = historyOverlay.classList.contains('hidden');
+        if (isHidden) {
+          historyOverlay.classList.remove('hidden');
+          loadChatHistoryOverlay();
+        } else {
+          historyOverlay.classList.add('hidden');
+        }
+      });
+    }
+
+    if (closeOverlayBtn && historyOverlay) {
+      closeOverlayBtn.addEventListener('click', () => {
+        historyOverlay.classList.add('hidden');
+      });
+    }
+
+    const chatAttachBtn = document.getElementById('btn-chat-attach');
+    const chatFileInput = document.getElementById('chat-file-input');
+    if (chatAttachBtn && chatFileInput) {
+      chatAttachBtn.addEventListener('click', () => {
+        chatFileInput.click();
+      });
+      chatFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+          handleChatFiles(e.target.files);
+        }
+      });
+    }
   }
-
-  const dropZone = document.getElementById('drop-zone');
-  const fileInput = document.getElementById('file-input');
-
-  if (dropZone && fileInput) {
-    dropZone.addEventListener('click', () => fileInput.click());
-
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length) handleFiles(e.target.files);
-    });
-  }
-
-  document.getElementById('btn-clear-files')?.addEventListener('click', () => {
-    document.getElementById('file-list-body').innerHTML = `
-      <tr class="empty-row">
-        <td colspan="5" class="text-center text-muted" style="padding: 24px;">No files uploaded yet.</td>
-      </tr>`;
-    refreshFarmerAnalytics();
-  });
 });
 
 function appendMessage(sender, html, forceId = null) {
@@ -315,38 +339,60 @@ function appendMessage(sender, html, forceId = null) {
   container.scrollTop = container.scrollHeight;
 }
 
-async function handleFiles(files) {
-  const tableBody = document.getElementById('file-list-body');
-  const emptyRow = tableBody?.querySelector('.empty-row');
-  if (emptyRow) emptyRow.remove();
+function renderDocumentShelf() {
+  const shelf = document.getElementById('chat-document-shelf');
+  if (!shelf) return;
+  if (uploadedDocuments.size === 0) {
+    shelf.classList.add('hidden');
+    shelf.innerHTML = '';
+    return;
+  }
+  shelf.classList.remove('hidden');
+  shelf.innerHTML = Array.from(uploadedDocuments.keys()).map(filename => `
+    <div class="doc-pill">
+      <input type="checkbox" class="doc-checkbox" data-filename="${filename.replace(/"/g, '&quot;')}" checked>
+      <span><i class="fa-solid fa-file-invoice"></i> ${filename}</span>
+      <button class="doc-delete-btn" data-filename="${filename.replace(/"/g, '&quot;')}">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  `).join('');
+  
+  // Bind delete events
+  shelf.querySelectorAll('.doc-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const fname = btn.dataset.filename;
+      uploadedDocuments.delete(fname);
+      renderDocumentShelf();
+    });
+  });
+}
 
+async function handleChatFiles(files) {
   for (const file of Array.from(files)) {
+    const aiThinkingId = 'msg-upload-' + Date.now();
+    appendMessage('ai', `<i class="fa-solid fa-circle-notch fa-spin text-teal-400"></i> Uploading and analyzing document: <strong>${file.name}</strong>...`, aiThinkingId);
+    
     const fd = new FormData();
     fd.append('file', file);
-    let status = 'Processed';
-    let detail = '';
     try {
-      await apiRequest('/upload/file', { method: 'POST', body: fd });
-      showToast(`${file.name} processed.`);
+      const response = await apiRequest('/upload/file', { method: 'POST', body: fd });
+      showToast(`${file.name} uploaded and processed.`);
+      const bubbleEl = document.getElementById(aiThinkingId);
+      if (bubbleEl) {
+        bubbleEl.innerHTML = `✅ <strong>${file.name}</strong> has been uploaded and processed successfully! I have analyzed its contents and added it to my knowledge base. You can now ask questions about it.`;
+      }
+      uploadedDocuments.set(file.name, response.metadata?.text || "");
+      renderDocumentShelf();
     } catch (err) {
-      status = 'Failed';
-      detail = err.message || String(err);
-      showToast(detail, true);
+      const bubbleEl = document.getElementById(aiThinkingId);
+      if (bubbleEl) {
+        bubbleEl.innerHTML = `❌ Failed to process <strong>${file.name}</strong>. Error: ${err.message || String(err)}`;
+      }
+      showToast(err.message || String(err), true);
     }
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><div class="font-bold"><i class="fa-solid fa-file text-emerald-400 mr-2"></i> ${file.name}</div></td>
-      <td class="text-secondary">${(file.size / 1024).toFixed(1)} KB</td>
-      <td class="text-secondary">${new Date().toLocaleDateString()}</td>
-      <td><span class="badge ${status === 'Processed' ? 'badge-green' : 'badge-red'}">${status}</span></td>
-      <td>
-        <button class="btn btn-ghost btn-sm action-btn" type="button" title="${detail.replace(/"/g, '&quot;')}"><i class="fa-solid fa-info"></i></button>
-      </td>
-    `;
-    tableBody.appendChild(tr);
   }
-
   await refreshFarmerAnalytics();
 }
 

@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from app.config import settings
 from app.dependencies import get_current_user
@@ -15,13 +15,17 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-from typing import Optional
+class AttachedDoc(BaseModel):
+    filename: str
+    text: str
 
 class ChatQuery(BaseModel):
     query: str
     city: Optional[str] = None
     land_size: Optional[float] = None
     use_web_search: Optional[bool] = False
+    selected_files: Optional[List[str]] = None
+    active_docs: Optional[List[AttachedDoc]] = None
 
 
 class ChatResponse(BaseModel):
@@ -64,13 +68,56 @@ async def chat_query(
     try:
         from app.services.openrouter_chat import openrouter_agri_response
         from app.services.search_service import search
+        from app.db.faiss_store import faiss_store
+        from app.services.embeddings import embedding_service
+
+        # Direct ChatGPT/Gemini style context injection if active documents are attached
+        context_parts = []
+        if query_in.active_docs:
+            doc_texts = []
+            for doc in query_in.active_docs:
+                title = doc.filename
+                text = doc.text
+                if text:
+                    doc_texts.append(f"Document source: {title}\nContent details: {text}")
+            if doc_texts:
+                context_parts.append("RELEVANT UPLOADED DOCUMENTS & CONTEXT:\n" + "\n---\n".join(doc_texts))
+        else:
+            # Search FAISS knowledge store for query context
+            try:
+                query_emb = embedding_service.generate_query_embedding(query)
+                relevant_docs = faiss_store.search(query_emb, k=4)
+                if relevant_docs:
+                    doc_texts = []
+                    for doc in relevant_docs:
+                        # Filter for documents uploaded by the current user, or knowledge base entries (which have no user_id or a matching one)
+                        doc_user_id = doc.get("user_id")
+                        if not doc_user_id or str(doc_user_id) == str(current_user.id):
+                            filename = doc.get("filename")
+                            if query_in.selected_files and filename and filename not in query_in.selected_files:
+                                continue
+                            title = filename or doc.get("topic") or "Knowledge Base"
+                            text = doc.get("text") or doc.get("ai_summary") or ""
+                            if text:
+                                doc_texts.append(f"Document source: {title}\nContent details: {text}")
+                    if doc_texts:
+                        context_parts.append("RELEVANT UPLOADED DOCUMENTS & CONTEXT:\n" + "\n---\n".join(doc_texts))
+            except Exception as search_err:
+                logger.warning(f"FAISS search failed: {search_err}")
+
+        # Append context if present
+        if query_in.city:
+            context_parts.append(f"District/City: {query_in.city}")
+        if query_in.land_size:
+            context_parts.append(f"Land Size: {query_in.land_size} Acres")
+        
+        full_query = query
+        if context_parts:
+            context_str = "\n\n".join(context_parts)
+            full_query = f"[Context:\n{context_str}\n]\nUser Question: {query}"
 
         # First get LLM response
-        res = await openrouter_agri_response(
-            query=query,
-            city=query_in.city,
-            land_size=query_in.land_size
-        )
+        res = await openrouter_agri_response(full_query)
 
         # If user requested web search, fetch and prepend results
         if getattr(query_in, "use_web_search", False):

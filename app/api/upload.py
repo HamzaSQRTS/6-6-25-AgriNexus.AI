@@ -42,6 +42,7 @@ async def upload_file(
     raw_text = pipeline.raw_text
     metadata = pipeline.metadata
     metadata["timestamp"] = datetime.datetime.utcnow().isoformat()
+    metadata["text"] = raw_text
 
     try:
         embedding = embedding_service.generate_query_embedding(raw_text[:1000])

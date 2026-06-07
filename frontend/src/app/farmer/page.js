@@ -20,6 +20,7 @@ export default function FarmerDashboard() {
   const [user, setUser] = useState(null);
   
   const [files, setFiles] = useState([]);
+  const [uploadedDocs, setUploadedDocs] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [selectedReportIdx, setSelectedReportIdx] = useState(0);
@@ -28,6 +29,7 @@ export default function FarmerDashboard() {
   const [attachedReport, setAttachedReport] = useState(null);
   const [historyList, setHistoryList] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistoryOverlay, setShowHistoryOverlay] = useState(false);
 
   useEffect(() => {
     setSelectedReportIdx(0);
@@ -45,11 +47,55 @@ export default function FarmerDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    if (activeView === 'view-history') {
+  const toggleHistoryOverlay = () => {
+    const nextVal = !showHistoryOverlay;
+    setShowHistoryOverlay(nextVal);
+    if (nextVal) {
       loadHistory();
     }
-  }, [activeView, loadHistory]);
+  };
+
+  const handleChatFileInput = async (e) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    
+    for (const file of Array.from(selectedFiles)) {
+      const tempId = 'upload-' + Date.now();
+      setChatMessages(prev => [
+        ...prev,
+        { id: tempId, sender: 'ai', html: `<i class="fa-solid fa-circle-notch fa-spin text-teal-400"></i> Uploading and analyzing document: <strong>${file.name}</strong>...` }
+      ]);
+      
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const response = await apiRequest('/upload/file', { method: 'POST', body: fd });
+        setChatMessages(prev => prev.map(m => m.id === tempId ? {
+          ...m,
+          html: `✅ <strong>${file.name}</strong> has been uploaded and processed successfully! I have analyzed its contents and added it to my knowledge base. You can now ask questions about it.`
+        } : m));
+        setUploadedDocs(prev => {
+          const filtered = prev.filter(d => d.filename !== file.name);
+          return [
+            ...filtered,
+            { filename: file.name, text: response.metadata?.text || "", checked: true }
+          ];
+        });
+      } catch (err) {
+        setChatMessages(prev => prev.map(m => m.id === tempId ? {
+          ...m,
+          html: `❌ Failed to process <strong>${file.name}</strong>. Error: ${err.message || String(err)}`
+        } : m));
+      }
+    }
+    
+    try {
+      const data = await apiRequest('/farmer/analytics');
+      setAnalytics(data);
+    } catch (err) {
+      console.warn('Failed to refresh analytics:', err);
+    }
+  };
   
   // Chat State
   const [chatMessages, setChatMessages] = useState([
@@ -146,18 +192,21 @@ export default function FarmerDashboard() {
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
   };
 
-  const submitQuery = async (queryText, displayUserText = null) => {
+  const submitQuery = async (queryText, displayUserText = null, activeDocs = []) => {
     const userMsgId = Date.now().toString();
     const newMessages = [...chatMessages, { id: userMsgId, sender: 'user', html: displayUserText || queryText }];
     setChatMessages(newMessages);
-
+ 
     const aiMsgId = (Date.now() + 1).toString();
     setChatMessages([...newMessages, { id: aiMsgId, sender: 'ai', html: '<i class="fa-solid fa-ellipsis fa-bounce"></i>' }]);
-
+ 
     try {
       const response = await apiRequest('/chat/query', {
         method: 'POST',
-        body: JSON.stringify({ query: queryText })
+        body: JSON.stringify({ 
+          query: queryText,
+          active_docs: activeDocs
+        })
       });
       
       const replyHtml = `
@@ -208,8 +257,14 @@ export default function FarmerDashboard() {
       setAttachedReport(null);
     }
 
+    const checkedDocs = uploadedDocs.filter(d => d.checked);
+    const activeDocsPayload = checkedDocs.map(d => ({
+      filename: d.filename,
+      text: d.text
+    }));
+
     setChatInput('');
-    await submitQuery(sentMsg, displayMsg);
+    await submitQuery(sentMsg, displayMsg, activeDocsPayload);
   };
 
   const handleContinueChatWithAnalytics = (report) => {
@@ -566,12 +621,6 @@ export default function FarmerDashboard() {
           <button className={`nav-item ${activeView === 'view-chat' ? 'active' : ''}`} onClick={() => setActiveView('view-chat')}>
             <i className="fa-solid fa-message nav-icon"></i> AI Advisory
           </button>
-          <button className={`nav-item ${activeView === 'view-upload' ? 'active' : ''}`} onClick={() => setActiveView('view-upload')}>
-            <i className="fa-solid fa-cloud-arrow-up nav-icon"></i> Data Upload
-          </button>
-          <button className={`nav-item ${activeView === 'view-history' ? 'active' : ''}`} onClick={() => setActiveView('view-history')}>
-            <i className="fa-solid fa-clock-rotate-left nav-icon"></i> Query History
-          </button>
         </nav>
 
         <div className="sidebar-footer">
@@ -593,8 +642,6 @@ export default function FarmerDashboard() {
           <div className="topbar-title">
             {activeView === 'view-analytics' && <><i className="fa-solid fa-chart-pie text-emerald-400 mr-2"></i> Farm Analytics</>}
             {activeView === 'view-chat' && <><i className="fa-solid fa-message text-emerald-400 mr-2"></i> AI Advisory</>}
-            {activeView === 'view-upload' && <><i className="fa-solid fa-cloud-arrow-up text-emerald-400 mr-2"></i> Data Upload</>}
-            {activeView === 'view-history' && <><i className="fa-solid fa-clock-rotate-left text-emerald-400 mr-2"></i> Query History</>}
           </div>
         </header>
 
@@ -765,6 +812,42 @@ export default function FarmerDashboard() {
           {activeView === 'view-chat' && (
             <section className="view-section active animate-fade-in">
               <div className="chat-container">
+                {/* Slide-in Query History Overlay inside Chat */}
+                <div className={`chat-history-overlay ${showHistoryOverlay ? '' : 'hidden'}`}>
+                  <div className="overlay-header">
+                    <h4><i className="fa-solid fa-clock-rotate-left mr-2"></i> Query History</h4>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowHistoryOverlay(false)}>
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <div className="overlay-list">
+                    {historyLoading ? (
+                      <div className="text-center text-muted" style={{ padding: '20px' }}>
+                        <i className="fa-solid fa-circle-notch fa-spin text-teal-400"></i> Loading queries...
+                      </div>
+                    ) : historyList.length === 0 ? (
+                      <div className="text-center text-muted" style={{ padding: '20px' }}>
+                        No query history yet.
+                      </div>
+                    ) : (
+                      historyList.map(item => (
+                        <button 
+                          key={item.id} 
+                          type="button"
+                          className="overlay-item" 
+                          onClick={() => {
+                            setChatInput(item.query || '');
+                            setShowHistoryOverlay(false);
+                          }}
+                        >
+                          <div className="item-query">{item.query}</div>
+                          <div className="item-date">{item.timestamp ? new Date(item.timestamp).toLocaleString() : ''}</div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+
                 <div className="chat-history" ref={chatHistoryRef}>
                   {chatMessages.map(msg => (
                     <div key={msg.id} className={`chat-msg ${msg.sender} animate-slide-down`}>
@@ -846,164 +929,48 @@ export default function FarmerDashboard() {
                       </button>
                     </div>
                   )}
+                  {uploadedDocs.length > 0 && (
+                    <div id="chat-document-shelf" className="chat-document-shelf" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px' }}>
+                      {uploadedDocs.map((doc, idx) => (
+                        <div key={idx} className="doc-pill animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(20, 184, 166, 0.08)', border: '1px solid rgba(20, 184, 166, 0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--teal-400)' }}>
+                          <input 
+                            type="checkbox" 
+                            className="doc-checkbox" 
+                            checked={doc.checked} 
+                            style={{ cursor: 'pointer' }}
+                            onChange={(e) => {
+                              const checkedVal = e.target.checked;
+                              setUploadedDocs(prev => prev.map((d, i) => i === idx ? { ...d, checked: checkedVal } : d));
+                            }} 
+                          />
+                          <span><i className="fa-solid fa-file-invoice"></i> {doc.filename}</span>
+                          <button 
+                            type="button"
+                            className="doc-delete-btn" 
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', marginLeft: '4px' }}
+                            onClick={() => {
+                              setUploadedDocs(prev => prev.filter((_, i) => i !== idx));
+                            }}
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <form className="chat-form" onSubmit={handleChatSubmit}>
+                    <button type="button" className="btn-icon text-muted" title="View Query History" onClick={toggleHistoryOverlay} style={{ background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fa-solid fa-clock-rotate-left"></i>
+                    </button>
+                    <button type="button" className="btn-icon text-muted" title="Attach file to chat" onClick={() => document.getElementById('chat-file-input').click()} style={{ background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fa-solid fa-paperclip"></i>
+                    </button>
+                    <input type="file" id="chat-file-input" className="hidden" accept=".pdf,.doc,.docx,.txt,.csv,.jpg,.jpeg,.png" onChange={handleChatFileInput} />
                     <textarea className="chat-input" placeholder="Ask about crops, diseases, or soil..." rows="1" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSubmit(e); } }}></textarea>
                     <button type="submit" className="btn btn-primary btn-icon"><i className="fa-solid fa-paper-plane"></i></button>
                   </form>
                 </div>
               </div>
-            </section>
-          )}
-
-          {activeView === 'view-upload' && (
-            <section className="view-section active animate-fade-in">
-              <div 
-                className={`upload-zone ${isDragging ? 'dragover' : ''} ${uploadBusy ? 'opacity-70' : ''}`}
-                onClick={() => !uploadBusy && document.getElementById('file-input').click()}
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-              >
-                <i className="fa-solid fa-cloud-arrow-up upload-icon"></i>
-                <h3 className="upload-title">{uploadBusy ? 'Processing Farm Data...' : 'Upload Farm Data & Reports'}</h3>
-                <p className="upload-subtitle">Drag and drop files here, or click to browse</p>
-                <input type="file" id="file-input" className="hidden" multiple onChange={handleFileInput} disabled={uploadBusy} />
-              </div>
-
-              <div className="file-manager">
-                <div className="file-manager-header">
-                  <h4 className="font-bold text-sm">Uploaded Documents</h4>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFiles([])}>Clear list</button>
-                </div>
-                <table className="file-table">
-                  <thead>
-                    <tr>
-                      <th>File Name</th>
-                      <th>Report Type</th>
-                      <th>Confidence</th>
-                      <th>Date</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {files.length === 0 ? (
-                      <tr className="empty-row"><td colSpan="5" className="text-center text-muted">No files in this session.</td></tr>
-                    ) : (
-                      files.map((file) => (
-                        <tr key={file.id}>
-                          <td><i className="fa-solid fa-file text-emerald-400 mr-2"></i> {file.name}</td>
-                          <td className="capitalize">{file.report_type.replace('_', ' ')}</td>
-                          <td><span className="badge badge-green">{file.confidence}</span></td>
-                          <td className="text-secondary">{file.date}</td>
-                          <td><span className="badge badge-green">Processed</span></td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {activeView === 'view-history' && (
-            <section className="view-section active animate-fade-in">
-              <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem' }}>
-                <div>
-                  <h3 className="text-xl font-bold">Query History</h3>
-                  <p className="text-secondary text-sm">Review your past conversations and diagnoses</p>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={loadHistory} disabled={historyLoading} style={{ border: '1px solid var(--border-dim)', fontSize: '0.8rem', padding: '0.5rem 1rem', borderRadius: '8px', color: 'var(--text-secondary)' }}>
-                  <i className={`fa-solid fa-arrows-rotate ${historyLoading ? 'fa-spin' : ''}`} style={{ marginRight: '0.5rem' }}></i>
-                  Refresh
-                </button>
-              </div>
-
-              {historyLoading ? (
-                <div className="flex justify-center items-center" style={{ minHeight: '300px', display: 'flex', width: '100%' }}>
-                  <i className="fa-solid fa-circle-notch fa-spin text-teal-400" style={{ fontSize: '2rem' }}></i>
-                </div>
-              ) : historyList.length === 0 ? (
-                <div className="empty-state">
-                  <i className="fa-solid fa-clock-rotate-left icon text-muted"></i>
-                  <h4>No Query History</h4>
-                  <p className="text-sm text-muted">Your past AI conversations and generated reports will appear here.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  {historyList.map((item) => {
-                    const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString() : '—';
-                    const diagnosis = item.response?.diagnosis || 'No response details.';
-                    const recs = item.response?.recommendations || [];
-                    const confidence = item.response?.confidence ? `${(item.response.confidence * 100).toFixed(0)}%` : '—';
-                    
-                    return (
-                      <div key={item.id} className="animate-slide-down" style={{
-                        background: 'var(--bg-surface)',
-                        border: '1px solid var(--border-dim)',
-                        borderRadius: '16px',
-                        padding: '1.5rem',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.3)'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-dim)'}>
-                        
-                        <div className="flex justify-between items-center" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border-dim)', paddingBottom: '0.75rem', display: 'flex' }}>
-                          <div className="flex items-center" style={{ gap: '0.5rem', display: 'flex' }}>
-                            <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>Query</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-calendar-day" style={{ marginRight: '0.25rem' }}></i> {dateStr}</span>
-                          </div>
-                          <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--teal-400)', fontSize: '0.8rem', padding: '0.25rem 0.5rem', border: '1px solid rgba(20, 184, 166, 0.2)', background: 'rgba(20, 184, 166, 0.03)', borderRadius: '6px', cursor: 'pointer' }} 
-                            onClick={() => {
-                              // Load this specific past message thread in the chat history
-                              setChatMessages([
-                                { id: 'welcome', sender: 'ai', html: 'Hello! I am your AgriNexus AI Advisor. I can analyze soil reports, diagnose plant diseases from images, and recommend precision fertilizer schedules.' },
-                                { id: 'past-user', sender: 'user', html: item.query },
-                                { id: 'past-ai', sender: 'ai', html: `
-                                  <div style="margin-bottom: 8px;"><strong>Analysis:</strong> ${item.response?.diagnosis || '—'} <span class="badge badge-green" style="font-size:0.7rem; padding: 2px 6px;">${confidence} Confidence</span></div>
-                                  <div style="margin-bottom: 8px;"><strong>Recommendations:</strong>
-                                    <ul style="margin-left: 20px; margin-top: 4px;">
-                                      ${recs.map(r => `<li>${r}</li>`).join('')}
-                                    </ul>
-                                  </div>
-                                  <div style="font-size: 0.85rem; color: var(--text-muted);">
-                                    <strong>Citations:</strong> ${(item.response?.citations || []).join(', ')}
-                                  </div>
-                                `}
-                              ]);
-                              setActiveView('view-chat');
-                            }}>
-                            <i className="fa-solid fa-comments" style={{ marginRight: '0.25rem' }}></i> Continue Chat
-                          </button>
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>Question</span>
-                          <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', background: 'rgba(255,255,255,0.01)', padding: '0.75rem 1rem', borderRadius: '8px', borderLeft: '3px solid var(--teal-500)', margin: 0 }}>
-                            {item.query.includes('[Attached Context Document:') ? item.query.split('\n\nUser Question:')[1] || item.query : item.query}
-                          </p>
-                        </div>
-
-                        <div>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>AI Diagnosis</span>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '0.75rem', margin: 0 }}>
-                            {diagnosis}
-                          </p>
-                          {recs.length > 0 && (
-                            <div style={{ marginTop: '0.75rem' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--teal-400)', display: 'block', marginBottom: '0.375rem' }}>Key Recommendations:</span>
-                              <ul style={{ paddingLeft: '1.25rem', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem', margin: 0 }}>
-                                {recs.map((r, i) => <li key={i} style={{ listStyleType: 'square' }}>{r}</li>)}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </section>
           )}
         </div>
