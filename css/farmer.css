@@ -1,0 +1,895 @@
+/* farmer.css */
+@import url('admin.css'); /* Inherit layout */
+
+/* Custom Farmer Layout Adjustments */
+.sidebar-logo-icon {
+  color: var(--teal-400);
+}
+.nav-item.active {
+  border-left-color: var(--teal-400);
+}
+.nav-item.active .nav-icon {
+  color: var(--teal-400);
+}
+.user-avatar {
+  background: var(--teal-500);
+}
+
+/* Chat Interface */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.chat-history {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.chat-msg {
+  display: flex;
+  gap: 1rem;
+  max-width: 80%;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chat-msg.ai .chat-avatar { background: rgba(20, 184, 166, 0.1); color: var(--teal-400); border: 1px solid rgba(20, 184, 166, 0.3); }
+.chat-msg.user .chat-avatar { background: var(--bg-surface-elevated); color: var(--text-primary); }
+
+.chat-bubble {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  line-height: 1.5;
+}
+.chat-msg.ai .chat-bubble {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-dim);
+  border-top-left-radius: 4px;
+}
+.chat-msg.user .chat-bubble {
+  background: var(--teal-500);
+  color: #fff;
+  border-top-right-radius: 4px;
+}
+
+.chat-input-area {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-dim);
+  background: rgba(24, 24, 27, 0.5);
+}
+
+/* Chat Context Form Styling */
+.chat-context-form {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.chat-context-form label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+.chat-context-form .form-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+
+.chat-suggestions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+.chat-suggestions::-webkit-scrollbar { height: 4px; }
+.chat-suggestions::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 4px; }
+
+.suggestion-chip {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border-dim);
+  border-radius: 99px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.suggestion-chip:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--teal-500);
+}
+
+.chat-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  background: var(--bg-void);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 0.5rem;
+}
+
+.chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: none;
+  padding: 0.5rem 0;
+  max-height: 120px;
+  min-height: 24px;
+}
+.chat-input:focus { outline: none; }
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+}
+
+.chat-actions .btn-primary {
+  background: var(--teal-500);
+  width: 36px;
+  height: 36px;
+}
+
+/* Upload Interface */
+.upload-zone {
+  border: 2px dashed var(--border-light);
+  border-radius: 24px;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  margin-bottom: 2rem;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--teal-500);
+  background: rgba(20, 184, 166, 0.05);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: var(--teal-400);
+  margin-bottom: 1rem;
+}
+.upload-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.upload-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.upload-formats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.file-manager {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+.file-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.file-table th, .file-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-dim);
+}
+.file-table th {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.action-btn {
+  color: var(--text-muted);
+  padding: 0.25rem;
+}
+.action-btn:hover {
+  color: var(--red-500);
+}
+
+/* Smart Agronomy View Styling */
+.agronomy-topbar-panel {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.dropdown-container, .quick-picks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.panel-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.quick-picks-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-dim);
+  color: var(--text-secondary);
+  padding: 0.375rem 0.875rem;
+  border-radius: 99px;
+  font-size: 0.825rem;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chip-btn:hover {
+  background: rgba(20, 184, 166, 0.1);
+  border-color: var(--teal-500);
+  color: var(--teal-400);
+  transform: translateY(-1px);
+}
+
+/* Custom Dropdown styling */
+.city-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.city-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.city-trigger:hover, .city-dropdown.is-open .city-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--teal-500);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+}
+
+.city-trigger-label {
+  flex: 1;
+  margin: 0 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-chevron {
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.city-dropdown.is-open .city-chevron {
+  transform: rotate(180deg);
+}
+
+.city-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.city-search-wrap {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border-dim);
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.city-search-icon {
+  color: var(--text-muted);
+  margin-right: 0.5rem;
+}
+
+.city-search {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: 0.375rem 0;
+  outline: none;
+}
+
+.city-list {
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.city-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.city-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.city-item.is-selected {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal-400);
+}
+
+.city-item-icon {
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+.city-item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.city-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.city-item-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.city-empty {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* Grids and Paneling */
+.agronomy-main-grid {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.agronomy-left-column, .agronomy-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.agronomy-panel-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.panel-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-dim);
+  padding-bottom: 0.75rem;
+}
+
+.panel-card-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--text-primary);
+}
+
+/* Sliders Form Controls */
+.soil-sliders-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.slider-val-badge {
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--teal-400);
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.form-range {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--teal-500);
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 0 6px rgba(20, 184, 166, 0.6);
+  transition: transform 0.15s;
+}
+
+.form-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Live Weather components */
+.weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.weather-cond {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.weather-cond-icon {
+  font-size: 2.25rem;
+  color: var(--teal-400);
+}
+
+.weather-cond-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.weather-updated {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-refresh {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.weather-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.50rem;
+  margin-bottom: 1.25rem;
+}
+
+.weather-alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.825rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.weather-alert i {
+  margin-top: 0.125rem;
+  font-size: 1rem;
+}
+
+.weather-alert.is-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.weather-alert.is-warning {
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+}
+
+.weather-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.weather-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 0.875rem 0.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.weather-card-icon {
+  font-size: 1.25rem;
+  color: var(--teal-400);
+}
+
+.weather-card-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.weather-card-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* Soil Classifier Output Components */
+.soil-header {
+  margin-bottom: 1.25rem;
+}
+
+.soil-type-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.soil-type-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.soil-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.soil-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.soil-section-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.soil-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.chip {
+  padding: 0.25rem 0.625rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chip-green {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--emerald-400);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.soil-text {
+  font-size: 0.825rem;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+.soil-text strong {
+  color: var(--text-secondary);
+}
+
+.soil-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.soil-score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.5rem 0;
+}
+
+.soil-score-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.soil-score-label {
+  width: 70px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: var(--text-secondary);
+}
+
+.soil-score-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.soil-score-fill {
+  height: 100%;
+  background: var(--teal-500);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.soil-score-pct {
+  width: 35px;
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+/* Crop recommendations output components */
+.crops-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-dim);
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.crops-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.crops-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.crop-alerts {
+  margin-bottom: 1.25rem;
+}
+
+.crop-alerts ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crop-alert-item {
+  padding: 0.625rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.825rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  line-height: 1.4;
+}
+
+.crop-alert-item.is-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 3px solid var(--red-500);
+  color: #fca5a5;
+}
+
+.crop-alert-item.is-warning {
+  background: rgba(249, 115, 22, 0.08);
+  border-left: 3px solid var(--orange-500);
+  color: #fdba74;
+}
+
+.crops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.crop-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.crop-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+.crop-rank {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  border-bottom-right-radius: 8px;
+  color: var(--text-secondary);
+}
+
+.crop-card.rank-1 .crop-rank {
+  background: var(--teal-500);
+  color: #fff;
+}
+
+.crop-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.crop-confidence {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.crop-conf-bar {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.crop-conf-fill {
+  height: 100%;
+  background: var(--teal-500);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.crop-conf-pct {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--teal-400);
+}
+
+/* Responsiveness overrides */
+@media (max-width: 1024px) {
+  .agronomy-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .agronomy-topbar-panel {
+    grid-template-columns: 1fr;
+  }
+  .soil-grid, .soil-charts {
+    grid-template-columns: 1fr;
+  }
+  .crops-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

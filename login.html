@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — AgriNexus.Ai</title>
+  <meta name="description" content="Access your AgriNexus.Ai account.">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body style="background: var(--bg-void);">
+
+  <!-- Ambient Glows -->
+  <div class="ambient-glow green"></div>
+  <div class="ambient-glow teal"></div>
+
+  <!-- Main Login Page Content -->
+  <main class="login-page">
+    
+    <div class="login-header animate-slide-down">
+      <a href="index.html" class="auth-logo">
+        <div class="auth-logo-icon"><i class="fa-solid fa-leaf"></i></div>
+        <div class="auth-logo-text">
+          <div class="auth-logo-name">AgriNexus<span>.Ai</span></div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="auth-card">
+      <div class="auth-card-inner">
+        
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-target="login">Login</button>
+          <button class="auth-tab" data-target="register">Register</button>
+        </div>
+
+        <div id="auth-error" class="auth-error"></div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-panel active">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="login-email" class="form-input" placeholder="farmer@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+          </div>
+          <div class="form-group" style="margin-top: 8px;">
+            <label class="form-label">Select Role</label>
+            <div class="role-selector">
+              <label class="role-option selected">
+                <input type="radio" name="login-role" value="farmer" checked>
+                <i class="fa-solid fa-tractor role-icon"></i>
+                <span class="role-label">Farmer</span>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="login-role" value="admin">
+                <i class="fa-solid fa-shield-halved role-icon"></i>
+                <span class="role-label">Admin</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="auth-submit" id="btn-login" style="margin-top: 8px;">
+            <span>Access Dashboard</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-panel">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="reg-name" class="form-input" placeholder="John Doe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="reg-email" class="form-input" placeholder="john@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="reg-password" class="form-input" placeholder="Min. 6 characters" required minlength="6">
+          </div>
+          
+
+
+          <button type="submit" class="auth-submit" id="btn-register" style="margin-top: 8px;">
+            <span>Create Account</span>
+            <i class="fa-solid fa-user-plus"></i>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application Logic -->
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/auth.js"></script>
+
+</body>
+</html>

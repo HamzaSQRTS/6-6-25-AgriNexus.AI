@@ -1,0 +1,17 @@
+.venv
+venv
+PROJECT MAIN E FEST
+frontend/node_modules
+frontend/.next
+node_modules
+.next
+dist
+build
+out
+*.log
+*.zip
+*.mp4
+*.mov
+594285.jpg
+*.jpg
+*.png

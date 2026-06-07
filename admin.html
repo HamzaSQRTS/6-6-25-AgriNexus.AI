@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — AgriNexus.Ai</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="sidebar-logo">
+          <div class="sidebar-logo-icon"><i class="fa-solid fa-leaf"></i></div>
+          <div class="sidebar-logo-text">AgriNexus<span>.Admin</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-target="view-dashboard">
+          <i class="fa-solid fa-chart-line nav-icon"></i> System Overview
+        </a>
+        <a class="nav-item" data-target="view-users">
+          <i class="fa-solid fa-users-gear nav-icon"></i> User Management
+        </a>
+        <a class="nav-item" data-target="view-settings">
+          <i class="fa-solid fa-sliders nav-icon"></i> AI Parameters
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="user-initial">A</div>
+          <div class="user-info">
+            <div class="user-name truncate" id="user-name-display">System Admin</div>
+            <div class="user-role">Administrator</div>
+          </div>
+          <button class="logout-btn" id="btn-logout" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <header class="topbar">
+        <div class="topbar-title" id="topbar-title">
+          <i class="fa-solid fa-chart-line text-emerald-400"></i> System Overview
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="badge badge-green"><div class="status-dot online"></div> System Online</span>
+        </div>
+      </header>
+
+      <div class="content-area">
+        
+        <!-- View: Overview Dashboard -->
+        <section id="view-dashboard" class="view-section active">
+          
+          <!-- Stats Row -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fa-solid fa-users"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" id="stat-total-users">--</div>
+                <div class="stat-label">Total Users</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon blue"><i class="fa-solid fa-tractor"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" id="stat-farmers">--</div>
+                <div class="stat-label">Active Farmers</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon purple"><i class="fa-solid fa-message"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" id="stat-queries-today">--</div>
+                <div class="stat-label">AI Queries Today</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange"><i class="fa-solid fa-file-invoice"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" id="stat-files-processed">--</div>
+                <div class="stat-label">Files Processed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-grid" style="grid-template-columns: 1fr;">
+            <div class="chart-card">
+              <div class="chart-header">
+                <h4 class="chart-title">System Activity (30 Days)</h4>
+              </div>
+              <div class="chart-container-wrapper">
+                <canvas id="activityChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- View: User Management -->
+        <section id="view-users" class="view-section">
+          
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h4 class="font-bold text-sm">Registered Accounts</h4>
+              <div class="table-search">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" class="form-input" id="search-users" placeholder="Search by name or email...">
+              </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+              <table class="admin-table" id="users-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Joined Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body">
+                  <!-- Rendered via JS -->
+                  <tr>
+                    <td colspan="5" class="text-center text-muted" style="padding: 24px;">Loading users...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- View: Settings (AI Parameters Health/Status) -->
+        <section id="view-settings" class="view-section">
+          <div class="stats-grid" style="margin-bottom: 1.5rem;">
+            <div class="stat-card">
+              <div class="stat-icon orange" id="api-status-icon"><i class="fa-solid fa-server"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" style="font-size: 1.1rem; text-transform: capitalize;" id="val-api-status">—</div>
+                <div class="stat-label">API Status</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange" id="db-status-icon"><i class="fa-solid fa-database"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" style="font-size: 1.1rem; text-transform: capitalize;" id="val-db-status">—</div>
+                <div class="stat-label" id="lbl-db-status">Database</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange" id="key-status-icon"><i class="fa-solid fa-key"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" style="font-size: 1.1rem;" id="val-key-status">—</div>
+                <div class="stat-label" id="lbl-key-status">API Key</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange" id="bot-status-icon"><i class="fa-solid fa-robot"></i></div>
+              <div class="stat-content">
+                <div class="stat-value" style="font-size: 1.1rem;" id="val-bot-status">—</div>
+                <div class="stat-label" id="lbl-bot-status">Chatbot</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-card" style="margin-bottom: 1.5rem;">
+            <div class="table-toolbar">
+              <h4 class="font-bold text-sm">Token limit</h4>
+              <span class="badge badge-green" id="badge-token-percent">0% of daily limit</span>
+            </div>
+            <div style="padding: 1rem 1.25rem;">
+              <p class="text-sm text-secondary" style="margin-bottom: 0.75rem;" id="text-token-usage">
+                0 / 100,000 tokens used today (0 requests)
+              </p>
+              <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                <div id="bar-token-usage" style="width: 0%; height: 100%; background: var(--emerald-400); transition: width 0.3s/ease;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h4 class="font-bold text-sm">API control</h4>
+              <button class="btn btn-sm btn-primary" id="btn-toggle-chat">Enable Chat API</button>
+            </div>
+            <div style="padding: 1rem 1.25rem;">
+              <p class="text-sm text-secondary" id="text-api-control">
+                Chat API is loading...
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application Logic -->
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/admin.js"></script>
+
+</body>
+</html>

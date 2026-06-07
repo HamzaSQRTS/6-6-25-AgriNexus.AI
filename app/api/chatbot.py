@@ -1,0 +1,134 @@
+import logging
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from typing import List
+
+from app.config import settings
+from app.dependencies import get_current_user
+from app.models.user import UserOut
+from app.db.mongodb import get_db
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+from typing import Optional
+
+class ChatQuery(BaseModel):
+    query: str
+    city: Optional[str] = None
+    land_size: Optional[float] = None
+    use_web_search: Optional[bool] = False
+
+
+class ChatResponse(BaseModel):
+    diagnosis: str
+    confidence: float
+    recommendations: List[str]
+    citations: List[str]
+
+
+@router.post("/query", response_model=ChatResponse)
+async def chat_query(
+    query_in: ChatQuery,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: UserOut = Depends(get_current_user),
+):
+    """Agricultural Q&A via OpenRouter (OpenAI-compatible API)."""
+    query = (query_in.query or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+
+    if not (settings.OPENROUTER_API_KEY or "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail="OPENROUTER_API_KEY is not set. Add it to your .env (see .env.example).",
+        )
+
+    from app.services.api_control import is_chat_enabled
+    from app.services.token_usage import get_usage_snapshot
+
+    if not is_chat_enabled():
+        raise HTTPException(status_code=503, detail="Chat API is disabled by administrator.")
+
+    usage = get_usage_snapshot(settings.DAILY_TOKEN_LIMIT)
+    if usage["limit_reached"]:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily token limit reached ({usage['tokens_used']}/{usage['daily_limit']}).",
+        )
+
+    try:
+        from app.services.openrouter_chat import openrouter_agri_response
+        from app.services.search_service import search
+
+        # First get LLM response
+        res = await openrouter_agri_response(
+            query=query,
+            city=query_in.city,
+            land_size=query_in.land_size
+        )
+
+        # If user requested web search, fetch and prepend results
+        if getattr(query_in, "use_web_search", False):
+            try:
+                web_md = await search(query)
+                if web_md:
+                    # Append web results to the diagnosis for display
+                    res["diagnosis"] = f"{web_md}\n\n{res.get('diagnosis', '')}"
+            except Exception as e:
+                logger.warning(f"Web search failed: {e}")
+
+        # Save to chat history database
+        try:
+            await db.chat_history.insert_one({
+                "user_id": current_user.id,
+                "query": query,
+                "response": res,
+                "timestamp": datetime.utcnow()
+            })
+        except Exception as db_err:
+            logger.warning(f"Failed to write to chat_history: {db_err}")
+
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("OpenRouter chat failed")
+        msg = str(e).strip() or repr(e)
+        typ = type(e).__name__
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"Chat provider error ({typ}): {msg}. "
+                f"Model={settings.OPENROUTER_MODEL!r}. "
+                "Confirm OPENROUTER_API_KEY at https://openrouter.ai/keys and pick a model from https://openrouter.ai/models"
+            ),
+        ) from e
+
+
+@router.get("/history")
+async def get_chat_history(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: UserOut = Depends(get_current_user),
+):
+    """Retrieve past chat conversations for the logged in user."""
+    try:
+        cursor = db.chat_history.find({"user_id": current_user.id}).sort("timestamp", -1)
+        docs = await cursor.to_list(length=100)
+        
+        history = []
+        for doc in docs:
+            history.append({
+                "id": str(doc.get("_id")),
+                "query": doc.get("query"),
+                "response": doc.get("response"),
+                "timestamp": doc.get("timestamp").isoformat() if doc.get("timestamp") else None
+            })
+        return history
+    except Exception as e:
+        logger.error(f"Failed to fetch chat history: {e}")
+        return []
