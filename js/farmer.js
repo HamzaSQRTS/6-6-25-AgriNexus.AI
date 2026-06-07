@@ -472,6 +472,8 @@ function initPlantHealthUI() {
     emptyState.classList.remove('hidden');
     contentArea.classList.add('hidden');
     altCard.classList.add('hidden');
+    const diagImgCard = document.getElementById('plant-diagnosed-image-card');
+    if (diagImgCard) diagImgCard.classList.add('hidden');
   });
 
   btnSubmit.addEventListener('click', async () => {
@@ -536,8 +538,12 @@ function initPlantHealthUI() {
     contentArea.classList.remove('hidden');
     
     const imgEl = document.getElementById('report-plant-image');
+    const diagImgCard = document.getElementById('plant-diagnosed-image-card');
     if (imgEl && data.image_path) {
       imgEl.src = data.image_path;
+      if (diagImgCard) diagImgCard.classList.remove('hidden');
+    } else {
+      if (diagImgCard) diagImgCard.classList.add('hidden');
     }
     
     reportPlantName.textContent = data.plant_name;

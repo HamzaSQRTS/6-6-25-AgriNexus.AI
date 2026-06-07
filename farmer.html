@@ -309,6 +309,16 @@
                 </div>
               </div>
               
+              <!-- Diagnosed Photo Card -->
+              <div class="agronomy-panel-card hidden" id="plant-diagnosed-image-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-image text-teal-400"></i> Diagnosed Plant Photo</h3>
+                </div>
+                <div style="text-align: center;">
+                  <img id="report-plant-image" src="" alt="Diagnosed Plant" style="max-height: 250px; width: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-dim);">
+                </div>
+              </div>
+              
               <!-- Alternatives Panel -->
               <div class="agronomy-panel-card hidden" id="plant-alt-card">
                 <div class="panel-card-header">
@@ -338,12 +348,6 @@
                 <!-- Analysis Content Area -->
                 <div id="plant-result-content" class="hidden animate-slide-up">
                   <div class="plant-report-grid">
-                    
-                    <!-- Diagnosed Plant Photo -->
-                    <div class="plant-report-card" style="grid-column: span 2; align-items: center; justify-content: center;">
-                      <span class="report-meta-label" style="align-self: flex-start; margin-bottom: 8px;">Diagnosed Plant Photo</span>
-                      <img id="report-plant-image" src="" alt="Diagnosed Plant" style="max-height: 250px; width: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-dim);">
-                    </div>
                     
                     <!-- Species & Confidence -->
                     <div class="plant-report-card">
