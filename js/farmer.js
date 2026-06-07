@@ -517,6 +517,7 @@ function initPlantHealthUI() {
         })
       });
 
+      analyzeRes.image_path = uploadRes.image_path;
       renderPlantAnalysisReport(analyzeRes);
       showToast("Diagnostic analysis completed!");
       loadPlantHistory();
@@ -533,6 +534,11 @@ function initPlantHealthUI() {
   function renderPlantAnalysisReport(data) {
     emptyState.classList.add('hidden');
     contentArea.classList.remove('hidden');
+    
+    const imgEl = document.getElementById('report-plant-image');
+    if (imgEl && data.image_path) {
+      imgEl.src = data.image_path;
+    }
     
     reportPlantName.textContent = data.plant_name;
     reportScientificName.textContent = data.scientific_name || "Unknown Scientific Name";
