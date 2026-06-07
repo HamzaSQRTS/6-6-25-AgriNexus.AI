@@ -38,6 +38,9 @@
         <a class="nav-item" data-target="view-agronomy">
           <i class="fa-solid fa-seedling nav-icon"></i> Smart Agronomy
         </a>
+        <a class="nav-item" data-target="view-plant-health">
+          <i class="fa-solid fa-notes-medical nav-icon"></i> Plant Health
+        </a>
         <a class="nav-item" data-target="view-upload">
           <i class="fa-solid fa-cloud-arrow-up nav-icon"></i> Data Upload
         </a>
@@ -312,6 +315,172 @@
               <div class="agronomy-panel-card">
                 <div id="crops-host"></div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Plant Health Analysis -->
+        <section id="view-plant-health" class="view-section">
+          <div class="plant-health-layout">
+            
+            <!-- Left Panel: Upload and Status Info -->
+            <div class="plant-left-panel">
+              <div class="agronomy-panel-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-camera text-teal-400"></i> Plant Upload & Diagnosis</h3>
+                </div>
+                
+                <!-- Image Drop/Upload Zone -->
+                <div class="plant-upload-zone" id="plant-drop-zone">
+                  <i class="fa-solid fa-file-image upload-icon"></i>
+                  <h4 class="upload-title">Drop plant photo here</h4>
+                  <p class="upload-subtitle">Supports JPG, JPEG, PNG up to 5MB</p>
+                  <input type="file" id="plant-file-input" class="hidden" accept=".jpg,.jpeg,.png">
+                </div>
+                
+                <!-- Image Preview Area -->
+                <div id="plant-preview-container" class="hidden animate-fade-in" style="margin-top: 15px; position: relative;">
+                  <img id="plant-image-preview" src="" alt="Plant preview" style="width: 100%; border-radius: 8px; border: 1px solid var(--border-dim); max-height: 250px; object-fit: cover;">
+                  <button class="btn btn-sm btn-ghost" id="btn-remove-plant-preview" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff;">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                  <button class="btn btn-primary" id="btn-submit-plant" style="flex: 1;" disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Run Diagnosis
+                  </button>
+                  <button class="btn btn-ghost" id="btn-clear-plant" style="width: 50px;" title="Reset Form">
+                    <i class="fa-solid fa-rotate"></i>
+                  </button>
+                </div>
+                
+                <!-- Loading indicator overlay -->
+                <div id="plant-loading-overlay" class="hidden text-center" style="margin-top: 15px; padding: 15px; background: rgba(20, 184, 166, 0.05); border: 1px solid rgba(20, 184, 166, 0.15); border-radius: 8px;">
+                  <i class="fa-solid fa-circle-notch fa-spin text-teal-400" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                  <div id="plant-loading-text" style="font-size: 0.825rem; font-weight: 500; color: var(--text-secondary);">Analyzing image...</div>
+                </div>
+              </div>
+              
+              <!-- Alternatives Panel -->
+              <div class="agronomy-panel-card hidden" id="plant-alt-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-list-check text-yellow-500"></i> Alternative Matches</h3>
+                </div>
+                <div id="plant-alt-list" style="display: flex; flex-direction: column; gap: 8px; font-size: 0.825rem;">
+                  <!-- Dynamic alternatives -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Panel: Identification and Health Results -->
+            <div class="plant-right-panel">
+              <!-- Diagnostics Result Panel -->
+              <div class="agronomy-panel-card" id="plant-diagnostic-result-card">
+                <div class="panel-card-header">
+                  <h3><i class="fa-solid fa-notes-medical text-teal-400"></i> Health Diagnostic Report</h3>
+                </div>
+                
+                <!-- Empty State before analysis runs -->
+                <div id="plant-result-empty-state" class="text-center" style="padding: 40px 20px;">
+                  <i class="fa-solid fa-prescription-bottle-medical text-muted" style="font-size: 3rem; margin-bottom: 15px; display: block; opacity: 0.4;"></i>
+                  <h4>No Analysis Executed</h4>
+                  <p class="text-muted text-sm">Upload a photo on the left to identify plant species and analyze crop health.</p>
+                </div>
+                
+                <!-- Analysis Content Area -->
+                <div id="plant-result-content" class="hidden animate-slide-up">
+                  <div class="plant-report-grid">
+                    
+                    <!-- Species & Confidence -->
+                    <div class="plant-report-card">
+                      <span class="report-meta-label">Species Identified</span>
+                      <h2 id="report-plant-name" style="margin: 5px 0 2px 0; font-size: 1.35rem; color: #fff;">—</h2>
+                      <span id="report-scientific-name" style="font-size: 0.75rem; font-style: italic; color: var(--text-muted);">—</span>
+                      <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span class="badge badge-green" id="report-confidence-badge">95% Match</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Health score & condition -->
+                    <div class="plant-report-card">
+                      <span class="report-meta-label">Health Score</span>
+                      <h2 id="report-health-score" style="margin: 5px 0; font-size: 2rem; font-weight: 800; color: var(--teal-400);">95%</h2>
+                      <span id="report-health-condition" class="badge" style="padding: 4px 10px; font-size: 0.75rem;">Healthy</span>
+                    </div>
+                    
+                    <!-- Detected Issues -->
+                    <div class="plant-report-card" style="grid-column: span 2;">
+                      <span class="report-meta-label">Detected Issues / Deficiencies</span>
+                      <div id="report-detected-diseases" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <!-- Disease labels -->
+                      </div>
+                    </div>
+                    
+                    <!-- AI Diagnostic details -->
+                    <div class="plant-report-card" style="grid-column: span 2;">
+                      <span class="report-meta-label">AI Pathology Insights</span>
+                      <p id="report-summary" style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.5; border-left: 2px solid var(--teal-500); padding-left: 12px;"></p>
+                      
+                      <div style="margin-top: 15px; font-size: 0.825rem;">
+                        <strong>Likely Causes:</strong>
+                        <p id="report-causes" style="color: var(--text-muted); margin-top: 4px; line-height: 1.4;"></p>
+                      </div>
+                    </div>
+                    
+                    <!-- Recommendations and Treatments -->
+                    <div class="plant-report-card" style="grid-column: span 2; border: 1px solid rgba(20, 184, 166, 0.15); background: rgba(20, 184, 166, 0.02);">
+                      <span class="report-meta-label" style="color: var(--teal-400);"><i class="fa-solid fa-clipboard-list"></i> Actionable Treatment Guidance</span>
+                      <div id="report-treatment-recommendations" style="margin-top: 10px; font-size: 0.875rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Treatment checklist -->
+                      </div>
+                    </div>
+                    
+                    <!-- Prevention and severity -->
+                    <div class="plant-report-card">
+                      <span class="report-meta-label">Prevention Tips</span>
+                      <p id="report-prevention" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.4;"></p>
+                    </div>
+                    
+                    <div class="plant-report-card">
+                      <span class="report-meta-label">Severity Level</span>
+                      <h3 id="report-severity-level" style="margin-top: 8px; font-size: 1.15rem; font-weight: 700;">Medium</h3>
+                      <span class="text-sm text-muted" id="report-severity-note">Immediate attention recommended.</span>
+                    </div>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+          
+          <!-- History Log Table -->
+          <div class="file-manager" style="margin-top: 25px;">
+            <div class="file-manager-header">
+              <h4 class="font-bold text-sm">Previous Diagnostic Reports</h4>
+              <button class="btn btn-ghost btn-sm" id="btn-refresh-plant-history">Refresh Log</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="file-table">
+                <thead>
+                  <tr>
+                    <th>Plant Image</th>
+                    <th>Identified Species</th>
+                    <th>Confidence</th>
+                    <th>Health Condition</th>
+                    <th>Issues Found</th>
+                    <th>Analysis Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="plant-history-list-body">
+                  <tr class="empty-row">
+                    <td colspan="7" class="text-center text-muted" style="padding: 24px;">No diagnostic history available.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>

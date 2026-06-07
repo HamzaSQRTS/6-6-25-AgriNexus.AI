@@ -874,22 +874,74 @@
   color: var(--teal-400);
 }
 
-/* Responsiveness overrides */
+/* Plant Health Analysis Layout Styles */
+.plant-health-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.plant-left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.plant-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.plant-upload-zone {
+  border: 2px dashed var(--border-dim);
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.plant-upload-zone:hover, .plant-upload-zone.dragover {
+  border-color: var(--teal-500);
+  background: rgba(20, 184, 166, 0.03);
+}
+
+.plant-upload-zone .upload-icon {
+  font-size: 2.5rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.plant-report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.plant-report-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.report-meta-label {
+  font-size: 0.725rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 @media (max-width: 1024px) {
-  .agronomy-main-grid {
+  .plant-health-layout {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
-  .agronomy-topbar-panel {
-    grid-template-columns: 1fr;
-  }
-  .soil-grid, .soil-charts {
-    grid-template-columns: 1fr;
-  }
-  .crops-grid {
-    grid-template-columns: 1fr;
-  }
-}
 

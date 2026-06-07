@@ -2,13 +2,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
-from app.api import auth, upload, chatbot, analytics, feedback, admin, reports, farmer, weather
+from app.api import auth, upload, chatbot, analytics, feedback, admin, reports, farmer, weather, plant_analysis
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Mount local plant images static files route
+PLANT_IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "plant_images")
+os.makedirs(PLANT_IMAGES_DIR, exist_ok=True)
+app.mount("/data/plant_images", StaticFiles(directory=PLANT_IMAGES_DIR), name="plant_images")
 
 # Set up CORS allowing any localhost port dynamically to avoid future port mismatches
 app.add_middleware(
@@ -45,6 +52,7 @@ app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["A
 app.include_router(farmer.router, prefix=f"{settings.API_V1_STR}/farmer", tags=["Farmer"])
 app.include_router(reports.router, prefix=f"{settings.API_V1_STR}/reports", tags=["Reports"])
 app.include_router(weather.router, prefix=f"{settings.API_V1_STR}/weather", tags=["Weather"])
+app.include_router(plant_analysis.router, prefix=f"{settings.API_V1_STR}/plant", tags=["Plant Analysis"])
 
 @app.get("/")
 async def root():

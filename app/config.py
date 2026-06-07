@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     GROK_MODEL: str = "grok-2-latest"
     GROK_BASE_URL: str = "https://api.x.ai/v1"
 
+    # Plant species identification & Vision health analysis API keys
+    PLANT_ID_API_KEY: str = ""
+
     # OpenWeatherMap (live weather for Smart Agronomy view)
     OPENWEATHER_API_KEY: str = ""
     OPENWEATHER_BASE_URL: str = "https://api.openweathermap.org/data/2.5"

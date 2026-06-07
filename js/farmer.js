@@ -349,3 +349,282 @@ async function handleFiles(files) {
 
   await refreshFarmerAnalytics();
 }
+
+// Plant Health Tab Functionality
+let selectedPlantFile = null;
+
+function initPlantHealthUI() {
+  const dropZone = document.getElementById('plant-drop-zone');
+  const fileInput = document.getElementById('plant-file-input');
+  const previewContainer = document.getElementById('plant-preview-container');
+  const imagePreview = document.getElementById('plant-image-preview');
+  const btnRemovePreview = document.getElementById('btn-remove-plant-preview');
+  const btnSubmit = document.getElementById('btn-submit-plant');
+  const btnClear = document.getElementById('btn-clear-plant');
+  const loadingOverlay = document.getElementById('plant-loading-overlay');
+  const loadingText = document.getElementById('plant-loading-text');
+  
+  const altCard = document.getElementById('plant-alt-card');
+  const altList = document.getElementById('plant-alt-list');
+  
+  // Results Elements
+  const emptyState = document.getElementById('plant-result-empty-state');
+  const contentArea = document.getElementById('plant-result-content');
+  const reportPlantName = document.getElementById('report-plant-name');
+  const reportScientificName = document.getElementById('report-scientific-name');
+  const reportConfidenceBadge = document.getElementById('report-confidence-badge');
+  const reportHealthScore = document.getElementById('report-health-score');
+  const reportHealthCondition = document.getElementById('report-health-condition');
+  const reportDetectedDiseases = document.getElementById('report-detected-diseases');
+  const reportSummary = document.getElementById('report-summary');
+  const reportCauses = document.getElementById('report-causes');
+  const reportTreatment = document.getElementById('report-treatment-recommendations');
+  const reportPrevention = document.getElementById('report-prevention');
+  const reportSeverityLevel = document.getElementById('report-severity-level');
+  
+  if (!dropZone || !fileInput) return;
+
+  const setPreview = (file) => {
+    if (!file) {
+      selectedPlantFile = null;
+      previewContainer.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+      btnSubmit.disabled = true;
+      return;
+    }
+    
+    selectedPlantFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.src = e.target.result;
+      previewContainer.classList.remove('hidden');
+      dropZone.classList.add('hidden');
+      btnSubmit.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) setPreview(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) setPreview(e.dataTransfer.files[0]);
+  });
+
+  btnRemovePreview.addEventListener('click', () => setPreview(null));
+  btnClear.addEventListener('click', () => {
+    setPreview(null);
+    emptyState.classList.remove('hidden');
+    contentArea.classList.add('hidden');
+    altCard.classList.add('hidden');
+  });
+
+  btnSubmit.addEventListener('click', async () => {
+    if (!selectedPlantFile) return;
+    
+    // 1. Show Upload Loading State
+    loadingOverlay.classList.remove('hidden');
+    btnSubmit.disabled = true;
+    loadingText.textContent = "Uploading & Identifying species...";
+    
+    const formData = new FormData();
+    formData.append('file', selectedPlantFile);
+    
+    try {
+      // Step A: Upload plant image and get species identification
+      const uploadRes = await apiRequest('/plant/upload-plant', {
+        method: 'POST',
+        body: formData
+      });
+      
+      // Render alternatives
+      if (uploadRes.alternatives && uploadRes.alternatives.length) {
+        altList.innerHTML = uploadRes.alternatives.map(alt => `
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-leaf text-yellow-500"></i>
+            <span>${alt}</span>
+          </div>
+        `).join('');
+        altCard.classList.remove('hidden');
+      } else {
+        altCard.classList.add('hidden');
+      }
+
+      // Step B: Health Pathology analysis via OpenAI Vision
+      loadingText.textContent = "Analyzing health pathologically...";
+      const analyzeRes = await apiRequest('/plant/analyze-plant', {
+        method: 'POST',
+        body: JSON.stringify({
+          upload_id: uploadRes.upload_id,
+          plant_name: uploadRes.plant_name,
+          scientific_name: uploadRes.scientific_name,
+          confidence: uploadRes.confidence
+        })
+      });
+
+      renderPlantAnalysisReport(analyzeRes);
+      showToast("Diagnostic analysis completed!");
+      loadPlantHistory();
+      
+    } catch (err) {
+      showToast(err.message || "Diagnostic failed", true);
+    } finally {
+      loadingOverlay.classList.add('hidden');
+      btnSubmit.disabled = false;
+    }
+  });
+
+  // Render individual analysis diagnostic data onto page cards
+  function renderPlantAnalysisReport(data) {
+    emptyState.classList.add('hidden');
+    contentArea.classList.remove('hidden');
+    
+    reportPlantName.textContent = data.plant_name;
+    reportScientificName.textContent = data.scientific_name || "Unknown Scientific Name";
+    
+    const confPct = Math.round((data.confidence || 1.0) * 100);
+    reportConfidenceBadge.textContent = `${confPct}% Confidence`;
+    
+    const score = Math.round(data.health_score || 100);
+    reportHealthScore.textContent = `${score}/100`;
+    reportHealthCondition.textContent = data.condition || "Healthy";
+    
+    // Style health condition badge color class dynamically
+    reportHealthCondition.className = "badge";
+    const cond = (data.condition || "").toLowerCase();
+    if (cond.includes('unhealthy')) {
+      reportHealthCondition.classList.add('badge-yellow');
+    } else if (cond.includes('diseased') || cond.includes('severe')) {
+      reportHealthCondition.classList.add('badge-red');
+    } else {
+      reportHealthCondition.classList.add('badge-green');
+    }
+    
+    // Split issues by comma and render as tags
+    const diseases = (data.disease_detected || "None").split(',').map(d => d.trim()).filter(Boolean);
+    reportDetectedDiseases.innerHTML = diseases.map(d => {
+      const isOk = d.toLowerCase() === 'none';
+      return `<span class="badge ${isOk ? 'badge-green' : 'badge-yellow'}"><i class="fa-solid ${isOk ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${d}</span>`;
+    }).join('');
+    
+    // Parse recommendation details object safely
+    let rec = {};
+    try {
+      rec = typeof data.recommendations === 'string' ? JSON.parse(data.recommendations) : data.recommendations;
+    } catch (e) {
+      rec = { summary: data.recommendations || "" };
+    }
+    
+    reportSummary.textContent = rec.summary || "No diagnostic pathology notes provided.";
+    reportCauses.textContent = rec.causes || "N/A";
+    reportPrevention.textContent = rec.prevention || "N/A";
+    
+    const severity = (rec.severity || "Low").toUpperCase();
+    reportSeverityLevel.textContent = severity;
+    reportSeverityLevel.style.color = severity === 'HIGH' ? 'var(--red-400)' : (severity === 'MEDIUM' ? 'var(--yellow-500)' : 'var(--emerald-400)');
+    
+    // Treatment checklist items split by semicolon
+    const treatments = (rec.treatment || "No treatment needed.").split(';').map(t => t.trim()).filter(Boolean);
+    reportTreatment.innerHTML = treatments.map(t => `
+      <div style="display: flex; align-items: start; gap: 8px; font-size: 0.85rem;">
+        <i class="fa-solid fa-square-check text-teal-400" style="margin-top: 3px;"></i>
+        <span>${t}</span>
+      </div>
+    `).join('');
+  }
+
+  // Reload history logs on click
+  document.getElementById('btn-refresh-plant-history').addEventListener('click', loadPlantHistory);
+  
+  // Expose function to trigger report renders from table rows click actions
+  window.viewPlantReportDetail = async (analysisId) => {
+    try {
+      const report = await apiRequest(`/plant/analysis/${analysisId}`);
+      renderPlantAnalysisReport(report);
+      
+      // Auto scroll viewport up to view results
+      document.getElementById('plant-diagnostic-result-card').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      showToast("Failed to fetch report details", true);
+    }
+  };
+}
+
+async function loadPlantHistory() {
+  const tableBody = document.getElementById('plant-history-list-body');
+  if (!tableBody) return;
+  
+  try {
+    const list = await apiRequest('/plant/history');
+    if (!list || !list.length) {
+      tableBody.innerHTML = `
+        <tr class="empty-row">
+          <td colspan="7" class="text-center text-muted" style="padding: 24px;">No diagnostic history available.</td>
+        </tr>`;
+      return;
+    }
+    
+    tableBody.innerHTML = list.map(item => {
+      // Parse dates nicely
+      const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString() : "—";
+      const confVal = Math.round((item.confidence || 1.0) * 100);
+      const scoreVal = Math.round(item.health_score || 100);
+      
+      // Fetch dynamic badge color
+      let badgeColor = "badge-green";
+      const cond = (item.condition || "").toLowerCase();
+      if (cond.includes('unhealthy')) badgeColor = "badge-yellow";
+      if (cond.includes('diseased') || cond.includes('severe')) badgeColor = "badge-red";
+      
+      return `
+        <tr>
+          <td>
+            <img src="${item.image_path}" alt="Diagnosed" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-dim);">
+          </td>
+          <td>
+            <div class="font-bold">${item.plant_name}</div>
+            <div style="font-size: 0.725rem; font-style: italic; color: var(--text-muted);">${item.scientific_name || ""}</div>
+          </td>
+          <td>${confVal}%</td>
+          <td>
+            <span class="badge ${badgeColor}">${item.condition} (${scoreVal}/100)</span>
+          </td>
+          <td>
+            <div style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.disease_detected}">
+              ${item.disease_detected}
+            </div>
+          </td>
+          <td class="text-secondary">${dateStr}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="viewPlantReportDetail(${item.id})">
+              <i class="fa-solid fa-eye"></i> View
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.warn("Failed to load history list:", err);
+  }
+}
+
+// Bind custom initialization hook
+document.addEventListener('DOMContentLoaded', () => {
+  initPlantHealthUI();
+  
+  // Load initial history when Plant Health tab is shown
+  const tabBtn = document.querySelector('.sidebar-nav .nav-item[data-target="view-plant-health"]');
+  if (tabBtn) {
+    tabBtn.addEventListener('click', loadPlantHistory);
+  }
+});
+
