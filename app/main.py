@@ -17,11 +17,9 @@ PLANT_IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dat
 os.makedirs(PLANT_IMAGES_DIR, exist_ok=True)
 app.mount("/data/plant_images", StaticFiles(directory=PLANT_IMAGES_DIR), name="plant_images")
 
-# Set up CORS allowing any localhost port dynamically to avoid future port mismatches
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
