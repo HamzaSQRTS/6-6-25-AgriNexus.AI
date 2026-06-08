@@ -1298,3 +1298,20 @@ html[dir="rtl"] .weather-widget-stats span i {
   margin-right: 0 !important;
   margin-left: 4px !important;
 }
+
+/* Light Theme overrides for Farmer Layout & Chat */
+[data-theme="light"] .topbar {
+  background: rgba(255, 255, 255, 0.8);
+}
+[data-theme="light"] .chat-msg.ai .chat-bubble {
+  background: rgba(0, 0, 0, 0.02);
+}
+[data-theme="light"] .chat-input-area {
+  background: rgba(255, 255, 255, 0.5);
+}
+[data-theme="light"] .chat-form {
+  background: var(--bg-surface-elevated);
+}
+[data-theme="light"] .chat-msg.user .chat-bubble {
+  color: #fff;
+}

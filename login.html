@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("agrinexus_theme") || "dark";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — AgriNexus.Ai</title>
@@ -27,9 +33,10 @@
 </head>
 <body style="background: var(--bg-void);">
 
-  <!-- Absolute positioned lang toggle -->
-  <div style="position: absolute; top: 20px; right: 20px; z-index: 100;">
+  <!-- Absolute positioned lang/theme toggles -->
+  <div style="position: absolute; top: 20px; right: 20px; z-index: 100; display: flex; gap: 10px;">
     <button id="btn-lang-toggle" class="nav-btn" style="background: rgba(20, 184, 166, 0.15); border: 1px solid rgba(20, 184, 166, 0.4); color: var(--teal-400); cursor: pointer; padding: 6px 14px; border-radius: 8px; font-weight: 700; transition: all 0.2s ease;">اردو</button>
+    <button id="btn-theme-toggle" class="nav-btn" style="background: rgba(20, 184, 166, 0.15); border: 1px solid rgba(20, 184, 166, 0.4); color: var(--teal-400); cursor: pointer; padding: 6px 14px; border-radius: 8px; font-weight: 700; transition: all 0.2s ease;" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
   </div>
 
   <!-- Ambient Glows -->
@@ -183,6 +190,30 @@
         localStorage.setItem("agrinexus_lang", currentLang);
         applyTranslations(currentLang);
       });
+
+      // Theme Toggler
+      const themeToggleBtn = document.getElementById("btn-theme-toggle");
+      let currentTheme = localStorage.getItem("agrinexus_theme") || "dark";
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        if (themeToggleBtn) {
+          const icon = themeToggleBtn.querySelector("i");
+          if (icon) {
+            icon.className = theme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+          }
+        }
+      }
+
+      if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+          currentTheme = currentTheme === "dark" ? "light" : "dark";
+          localStorage.setItem("agrinexus_theme", currentTheme);
+          applyTheme(currentTheme);
+        });
+      }
+
+      applyTheme(currentTheme);
       
       // Initialize
       applyTranslations(currentLang);
