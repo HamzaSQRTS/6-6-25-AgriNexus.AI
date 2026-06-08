@@ -1260,7 +1260,41 @@
   }
 }
 
-
-
-
-
+/* RTL Adjustments */
+html[dir="rtl"] {
+  font-family: 'Noto Nastaliq Urdu', 'Inter', sans-serif;
+}
+html[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--border-dim);
+}
+html[dir="rtl"] .nav-item.active {
+  border-left: none;
+  border-right: 3px solid var(--teal-400);
+}
+html[dir="rtl"] .logout-btn {
+  margin-left: 0;
+  margin-right: auto;
+}
+html[dir="rtl"] .topbar-actions {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+html[dir="rtl"] .weather-widget-card {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+html[dir="rtl"] .weather-widget-main {
+  border-right: none !important;
+  border-left: 1px solid var(--border-dim) !important;
+  padding-right: 0 !important;
+  padding-left: 1.25rem !important;
+}
+html[dir="rtl"] .weather-widget-location i {
+  margin-right: 0 !important;
+  margin-left: 4px !important;
+}
+html[dir="rtl"] .weather-widget-stats span i {
+  margin-right: 0 !important;
+  margin-left: 4px !important;
+}

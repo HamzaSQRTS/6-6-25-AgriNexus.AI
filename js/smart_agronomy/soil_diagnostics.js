@@ -410,6 +410,11 @@ export function clearSoilImage() {
 
 // Generate diagnostic advisory recommendation package
 export async function generateSoilAdvisory(classification, soilGrids, weather, cityName) {
+  const lang = localStorage.getItem("agrinexus_lang") || "en";
+  const languageInstruction = lang === "ur" 
+    ? "IMPORTANT: Please write the entire response, headers, and recommendations in Urdu (اردو) so the Pakistani farmer can easily read it."
+    : "Please write your entire response and recommendations in English.";
+
   const promptQuery = `
     Produce a complete agricultural advisory package based on these soil diagnostic parameters:
     - Selected Location/City: ${cityName || "Unspecified"}
@@ -423,6 +428,8 @@ export async function generateSoilAdvisory(classification, soilGrids, weather, c
     2. Fertilizer recommendations
     3. Compost/Organic Amendment requirements
     4. Crop suitability (list of best fit crops)
+
+    ${languageInstruction}
   `;
 
   try {

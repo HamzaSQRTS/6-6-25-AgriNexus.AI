@@ -83,7 +83,7 @@ class PlantService:
                 }
 
     @staticmethod
-    async def analyze_health(image_bytes: bytes, plant_name: str) -> Dict[str, Any]:
+    async def analyze_health(image_bytes: bytes, plant_name: str, lang: str = "en") -> Dict[str, Any]:
         """
         Sends the plant image and identification name to OpenRouter (e.g. google/gemini-2.0-flash-exp) for vision diagnosis.
         """
@@ -91,6 +91,19 @@ class PlantService:
         if not api_key:
             # Fallback mock analysis if API key not found
             logger.warning("OPENROUTER_API_KEY is not configured. Using fallback mock analysis.")
+            if lang == "ur":
+                return {
+                    "condition": "Moderately Unhealthy",
+                    "disease_detected": "ابتدائی جھلسنا (Early Blight)، نائٹروجن کی کمی",
+                    "health_score": 65.0,
+                    "recommendations": json.dumps({
+                        "summary": "پودے میں ابتدائی جھلساؤ (early blight) کی فنگل بیماری اور نائٹروجن کی کمی کے آثار ہیں۔",
+                        "causes": "پتوں پر زیادہ نمی اور مٹی میں نائٹروجن کی کم مقدار۔",
+                        "treatment": "متاثرہ پتے کاٹ دیں؛ نامیاتی تانبے کا فنگسائڈ استعمال کریں۔",
+                        "prevention": "پتوں کے اوپر پانی دینے سے گریز کریں؛ نائٹروجن سے بھرپور نامیاتی کھاد ڈالیں۔",
+                        "severity": "Medium"
+                    }, ensure_ascii=False)
+                }
             return {
                 "condition": "Moderately Unhealthy",
                 "disease_detected": "Early Blight, Nitrogen Deficiency",
@@ -114,6 +127,10 @@ class PlantService:
         
         encoded_image = base64.b64encode(image_bytes).decode("utf-8")
         
+        lang_instruction = ""
+        if lang == "ur":
+            lang_instruction = "IMPORTANT: You MUST write the values for 'disease_detected', 'summary', 'causes', 'treatment', and 'prevention' in Urdu (اردو) so the local Pakistani farmer can read them easily. Keep 'condition' and 'severity' in English."
+
         prompt = f"""
         You are an expert plant pathologist and agricultural AI assistant.
         Analyze this image of a plant identified as '{plant_name}'.
@@ -130,6 +147,7 @@ class PlantService:
             "severity": "Low" | "Medium" | "High"
         }}
         Do not add any markup or markdown fences. Just output the raw JSON object.
+        {lang_instruction}
         """
 
         payload = {

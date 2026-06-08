@@ -21,6 +21,10 @@ import { fetchWeather, renderWeather, extractAlerts } from './weather.js';
 let _baseTrainingData = null;
 let _currentCityName = "Lahore";
 let _coords = { lat: 31.5204, lon: 74.3587 };
+let _lastClassification = null;
+let _lastSoilGrids = null;
+let _lastWeather = null;
+let _lastAdvisory = null;
 
 export async function initSmartAgronomy() {
   // Load base training data
@@ -161,6 +165,10 @@ export async function initSmartAgronomy() {
         const advisory = await generateSoilAdvisory(classification, soilGrids, weather, _currentCityName);
         
         // Render panels
+        _lastClassification = classification;
+        _lastSoilGrids = soilGrids;
+        _lastWeather = weather;
+        _lastAdvisory = advisory;
         renderSoilResults(classification, soilGrids, weather, advisory);
         runCropRecommender(classification, soilGrids, weather);
         showToast("Diagnostics complete!");
@@ -172,30 +180,72 @@ export async function initSmartAgronomy() {
     });
   }
 
-  // Initialize placeholder view state
-  const soilHost = document.getElementById('soil-host');
-  if (soilHost) {
+  // Define dynamic placeholder renderer
+  function renderSoilPlaceholder() {
+    const soilHost = document.getElementById('soil-host');
+    if (!soilHost) return;
+    const lang = localStorage.getItem("agrinexus_lang") || "en";
+    const dict = window.AGRINEXUS_TRANSLATIONS?.[lang] || window.AGRINEXUS_TRANSLATIONS?.en;
     soilHost.innerHTML = `
       <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
         <i class="fa-solid fa-microscope" style="font-size: 3rem; color: var(--teal-400); opacity: 0.6; margin-bottom: 12px; display: block;"></i>
-        <h4 style="font-weight: 700; color: #fff; margin-bottom: 4px;">Ready for Analysis</h4>
-        <p style="font-size: 0.825rem; max-width: 320px; margin: 0 auto;">Upload a soil image in the left panel to trigger TensorFlow.js diagnostics and physical property assessments.</p>
+        <h4 style="font-weight: 700; color: #fff; margin-bottom: 4px;">${dict?.agro_ready_title || "Ready for Analysis"}</h4>
+        <p style="font-size: 0.825rem; max-width: 320px; margin: 0 auto;">${dict?.agro_ready_desc || "Upload a soil image in the left panel to trigger TensorFlow.js diagnostics and physical property assessments."}</p>
       </div>
     `;
   }
+
+  // Initialize placeholder view state
+  renderSoilPlaceholder();
+
+  // Listen to language changes to translate dynamic content on the fly
+  document.addEventListener('languageChanged', () => {
+    if (_lastClassification && _lastSoilGrids && _lastWeather && _lastAdvisory) {
+      renderSoilResults(_lastClassification, _lastSoilGrids, _lastWeather, _lastAdvisory);
+      runCropRecommender(_lastClassification, _lastSoilGrids, _lastWeather);
+    } else {
+      renderSoilPlaceholder();
+    }
+  });
 }
 
 function renderSoilResults(classification, soilGrids, weather, advisory) {
   const host = document.getElementById('soil-host');
   if (!host) return;
 
+  const lang = localStorage.getItem("agrinexus_lang") || "en";
+  const dict = window.AGRINEXUS_TRANSLATIONS?.[lang] || window.AGRINEXUS_TRANSLATIONS?.en;
+
+  const textureMap = {
+    sandy: { en: "Sandy", ur: "ریتیلی" },
+    clay: { en: "Clayey", ur: "چکنی مٹی" },
+    loamy: { en: "Loamy", ur: "زرخیز (لوم)" },
+    silty: { en: "Silty", ur: "گاد والی (سلٹ)" },
+    rocky: { en: "Rocky", ur: "پتھریلی" }
+  };
+
+  const moistureMap = {
+    Wet: { en: "Wet", ur: "گیلی" },
+    Moist: { en: "Moist", ur: "نرم/نم دار" },
+    Dry: { en: "Dry", ur: "خشک" }
+  };
+
+  const soilLabelMap = {
+    "Sandy Soil": { en: "Sandy Soil", ur: "ریتیلی مٹی" },
+    "Clay Soil": { en: "Clay Soil", ur: "چکنی مٹی" },
+    "Loamy Soil": { en: "Loamy Soil", ur: "میرا / زرخیز مٹی" },
+    "Silty Soil": { en: "Silty Soil", ur: "سلٹ / گاد والی مٹی" },
+    "Rocky Soil": { en: "Rocky Soil", ur: "پتھریلی مٹی" }
+  };
+
   const scoreRows = Object.entries(classification.scores || {})
     .sort((a, b) => b[1] - a[1])
     .map(([k, v]) => {
       const pct = Math.round(v * 100);
+      const label = textureMap[k.toLowerCase()]?.[lang] || k;
       return `
         <div class="soil-score-row" style="margin-bottom: 8px;">
-          <span class="soil-score-label" style="text-transform: capitalize; font-size: 0.8rem; font-weight: 600; min-width: 70px; display: inline-block;">${k}</span>
+          <span class="soil-score-label" style="text-transform: capitalize; font-size: 0.8rem; font-weight: 600; min-width: 70px; display: inline-block;">${label}</span>
           <div class="soil-score-bar" style="flex: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; display: flex; align-items: center; margin: 0 10px;">
             <div class="soil-score-fill" style="width: ${pct}%; height: 100%; background: var(--teal-400); border-radius: 99px;"></div>
           </div>
@@ -204,56 +254,59 @@ function renderSoilResults(classification, soilGrids, weather, advisory) {
       `;
     }).join('');
 
+  const translatedLabel = soilLabelMap[classification.label]?.[lang] || classification.label;
+  const translatedMoisture = moistureMap[classification.moisture]?.[lang] || classification.moisture;
+
   host.innerHTML = `
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-dim); padding-bottom: 1rem; margin-bottom: 1rem;">
         <div>
-          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Soil Type</span>
-          <h2 style="font-size: 1.85rem; font-weight: 850; color: #fff; margin: 0; line-height: 1.1;">${classification.label}</h2>
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">${dict.agro_soil_type}</span>
+          <h2 style="font-size: 1.85rem; font-weight: 850; color: #fff; margin: 0; line-height: 1.1;">${translatedLabel}</h2>
         </div>
         <div style="text-align: right;">
-          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block;">Moisture State</span>
-          <span class="badge ${classification.moisture === 'Wet' ? 'badge-blue' : classification.moisture === 'Moist' ? 'badge-green' : 'badge-yellow'}" style="font-size: 0.85rem; padding: 4px 10px; font-weight: 700; margin-top: 4px; display: inline-block;">${classification.moisture}</span>
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block;">${dict.agro_moisture_state}</span>
+          <span class="badge ${classification.moisture === 'Wet' ? 'badge-blue' : classification.moisture === 'Moist' ? 'badge-green' : 'badge-yellow'}" style="font-size: 0.85rem; padding: 4px 10px; font-weight: 700; margin-top: 4px; display: inline-block;">${translatedMoisture}</span>
         </div>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem;">
         <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); border-radius: 12px; padding: 10px 14px;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">pH Level</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${dict.agro_ph_level}</span>
           <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-top: 4px;">${soilGrids.ph}</div>
         </div>
         <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); border-radius: 12px; padding: 10px 14px;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Organic Carbon</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${dict.agro_organic_carbon}</span>
           <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-top: 4px;">${soilGrids.organic_carbon} <span style="font-size: 0.8rem; font-weight: 500;">g/kg</span></div>
         </div>
         <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); border-radius: 12px; padding: 10px 14px;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Clay Content</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${dict.agro_clay_content}</span>
           <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-top: 4px;">${soilGrids.clay}%</div>
         </div>
         <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); border-radius: 12px; padding: 10px 14px;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Bulk Density</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${dict.agro_bulk_density}</span>
           <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-top: 4px;">${soilGrids.bulk_density} <span style="font-size: 0.8rem; font-weight: 500;">g/cm³</span></div>
         </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem;">
         <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-dim); border-radius: 12px; padding: 14px;">
-          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--teal-400); margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-list"></i> Type Fit Confidence</h4>
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--teal-400); margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-list"></i> ${dict.agro_fit_confidence}</h4>
           <div style="display: flex; flex-direction: column;">${scoreRows}</div>
         </div>
         <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-dim); border-radius: 12px; padding: 14px;">
-          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--teal-400); margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-chart-column"></i> Diagnostic Metrics</h4>
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--teal-400); margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-chart-column"></i> ${dict.agro_diagnostic_metrics}</h4>
           <div style="font-size: 0.825rem; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between;"><span>Sand / Silt Fraction:</span> <strong>${soilGrids.sand}% / ${soilGrids.silt}%</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span>Soil Temperature:</span> <strong>${weather.temp}°C</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span>Soil Moisture (Hourly):</span> <strong>${weather.soil_moisture}%</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span>Relative Humidity:</span> <strong>${weather.humidity}%</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>${dict.agro_sand_silt}</span> <strong>${soilGrids.sand}% / ${soilGrids.silt}%</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>${dict.agro_temp}</span> <strong>${weather.temp}°C</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>${dict.agro_moisture}</span> <strong>${weather.soil_moisture}%</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>${dict.agro_humidity}</span> <strong>${weather.humidity}%</strong></div>
           </div>
         </div>
       </div>
 
       <div style="background: rgba(20, 184, 166, 0.03); border: 1px solid rgba(20, 184, 166, 0.25); border-radius: 12px; padding: 16px;">
-        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--teal-400); margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Health Assessment</h4>
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--teal-400); margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wand-magic-sparkles"></i> ${dict.agro_advisory_title}</h4>
         <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; margin: 0; white-space: pre-line;">${advisory.diagnosis}</p>
       </div>
     </div>
@@ -263,6 +316,17 @@ function renderSoilResults(classification, soilGrids, weather, advisory) {
 function runCropRecommender(classification, soilGrids, weather) {
   const host = document.getElementById('crops-host');
   if (!host) return;
+
+  const lang = localStorage.getItem("agrinexus_lang") || "en";
+  const dict = window.AGRINEXUS_TRANSLATIONS?.[lang] || window.AGRINEXUS_TRANSLATIONS?.en;
+
+  const cropMap = {
+    rice: { en: "Rice", ur: "چاول (دھان)" },
+    wheat: { en: "Wheat", ur: "گندم" },
+    maize: { en: "Maize", ur: "مکئی" },
+    sugarcane: { en: "Sugarcane", ur: "گنا" },
+    cotton: { en: "Cotton", ur: "کپاس" }
+  };
 
   // Predict crops using user's real physical attributes mapped from APIs
   const inputs = {
@@ -292,31 +356,35 @@ function runCropRecommender(classification, soilGrids, weather) {
   const userRows = getUserTrainingRows().length;
 
   const cards = (top3 && top3.length)
-    ? top3.map((c, i) => `
-      <div class="crop-card rank-${i + 1}" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--teal-400); width: 35px; height: 35px; border-radius: 8px; background: rgba(20,184,166,0.1); display: flex; align-items: center; justify-content: center;">#${i + 1}</div>
-        <div style="flex: 1;">
-          <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${c.crop}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Match Likelihood</div>
+    ? top3.map((c, i) => {
+      const cropName = cropMap[c.crop.toLowerCase()]?.[lang] || c.crop;
+      return `
+        <div class="crop-card rank-${i + 1}" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-dim); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+          <div style="font-size: 1.25rem; font-weight: 800; color: var(--teal-400); width: 35px; height: 35px; border-radius: 8px; background: rgba(20,184,166,0.1); display: flex; align-items: center; justify-content: center;">#${i + 1}</div>
+          <div style="flex: 1;">
+            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${cropName}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${dict.agro_match_likelihood}</div>
+          </div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: var(--teal-400);">${Math.round(c.confidence * 100)}%</div>
         </div>
-        <div style="font-size: 1.1rem; font-weight: 800; color: var(--teal-400);">${Math.round(c.confidence * 100)}%</div>
-      </div>
-    `).join('')
-    : `<div class="empty-state small"><p>No recommendations generated.</p></div>`;
+      `;
+    }).join('')
+    : `<div class="empty-state small"><p>${dict.agro_no_recs}</p></div>`;
 
   host.innerHTML = `
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-dim); padding-bottom: 1rem; margin-bottom: 1rem;">
         <div>
-          <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-leaf text-emerald-400"></i> Recommended Crops</h3>
-          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 4px 0 0 0;">Top crops suited for your analyzed soil texture and current local parameters</p>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-leaf text-emerald-400"></i> ${dict.agro_recommended_crops}</h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 4px 0 0 0;">${dict.agro_crops_subtitle}</p>
         </div>
       </div>
       <div style="margin-bottom: 15px;">${cards}</div>
       <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-dim); padding-top: 10px; margin-top: 10px;">
-        <span>Accuracy: <strong>${accPct}%</strong></span>
-        <span>Training size: <strong>${meta.rowCount || 120} samples</strong></span>
+        <span>${dict.agro_accuracy}: <strong>${accPct}%</strong></span>
+        <span>${dict.agro_training_size}: <strong>${meta.rowCount || 120} ${dict.agro_samples}</strong></span>
       </div>
     </div>
   `;
 }
+

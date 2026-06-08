@@ -60,7 +60,7 @@ async function refreshFarmerAnalytics() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initializeDashboardPart1() {
   setupCommonUI();
   
   // Set current date on dashboard
@@ -82,8 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
           acres: user.acres
         }));
         
-        const nameEl = document.getElementById('farmer-greet-name');
-        if (nameEl) nameEl.textContent = user.full_name || user.email;
+        const currentLang = localStorage.getItem("agrinexus_lang") || "en";
+        const dictionary = window.AGRINEXUS_TRANSLATIONS?.[currentLang];
+        const welcomeTitleEl = document.querySelector('.welcome-title');
+        if (welcomeTitleEl && dictionary) {
+          welcomeTitleEl.innerHTML = `${dictionary.dash_welcome}, <span id="farmer-greet-name" style="color: var(--teal-400);">${user.full_name || user.email}</span>!`;
+        } else {
+          const nameEl = document.getElementById('farmer-greet-name');
+          if (nameEl) nameEl.textContent = user.full_name || user.email;
+        }
         
         const nameDisplay = document.getElementById('user-name-display');
         const initialDisplay = document.getElementById('user-initial');
@@ -113,18 +120,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } else {
+          const isUr = currentLang === 'ur';
           const locEl = document.getElementById('dash-weather-location');
-          if (locEl) locEl.textContent = "No city set in profile";
+          if (locEl) locEl.textContent = isUr ? "پروفائل میں کوئی شہر متعین نہیں ہے" : "No city set in profile";
           const condEl = document.getElementById('dash-weather-cond');
-          if (condEl) condEl.textContent = "N/A";
+          if (condEl) condEl.textContent = isUr ? "دستیاب نہیں" : "N/A";
         }
       }
     } catch (err) {
       console.warn('Dashboard greeting/weather load failed:', err);
+      const currentLang = localStorage.getItem("agrinexus_lang") || "en";
+      const isUr = currentLang === 'ur';
       const condEl = document.getElementById('dash-weather-cond');
-      if (condEl) condEl.textContent = 'Weather Unavailable';
+      if (condEl) condEl.textContent = isUr ? 'موسم دستیاب نہیں ہے' : 'Weather Unavailable';
       const locEl = document.getElementById('dash-weather-location');
-      if (locEl) locEl.textContent = 'Check API settings';
+      if (locEl) locEl.textContent = isUr ? 'اے پی آئی کی ترتیبات چیک کریں' : 'Check API settings';
       const iconHost = document.getElementById('dash-weather-icon');
       if (iconHost) iconHost.innerHTML = `<i class="fa-solid fa-cloud" style="color: var(--text-muted); font-size: 1.5rem;"></i>`;
     }
@@ -179,7 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.add('active');
       const target = document.getElementById(item.dataset.target);
       if (target) target.classList.add('active');
-      if (topbarTitle) topbarTitle.innerHTML = item.innerHTML;
+      if (topbarTitle) {
+        topbarTitle.innerHTML = item.innerHTML;
+        const key = item.getAttribute('data-translate');
+        if (key) {
+          topbarTitle.setAttribute('data-translate', key);
+        } else {
+          topbarTitle.removeAttribute('data-translate');
+        }
+      }
       if (item.dataset.target === 'view-analytics') {
         await refreshFarmerAnalytics();
       }
@@ -333,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-});
+}
 
 function appendMessage(sender, html, forceId = null) {
   const container = document.getElementById('chat-history');
@@ -411,6 +429,7 @@ async function handleChatFiles(files) {
 
 // Plant Health Tab Functionality
 let selectedPlantFile = null;
+let lastPlantAnalysisData = null;
 
 function initPlantHealthUI() {
   const dropZone = document.getElementById('plant-drop-zone');
@@ -528,7 +547,8 @@ function initPlantHealthUI() {
           upload_id: uploadRes.upload_id,
           plant_name: uploadRes.plant_name,
           scientific_name: uploadRes.scientific_name,
-          confidence: uploadRes.confidence
+          confidence: uploadRes.confidence,
+          lang: localStorage.getItem("agrinexus_lang") || "en"
         })
       });
 
@@ -547,6 +567,7 @@ function initPlantHealthUI() {
 
   // Render individual analysis diagnostic data onto page cards
   function renderPlantAnalysisReport(data) {
+    lastPlantAnalysisData = data;
     emptyState.classList.add('hidden');
     contentArea.classList.remove('hidden');
     
@@ -562,12 +583,28 @@ function initPlantHealthUI() {
     reportPlantName.textContent = data.plant_name;
     reportScientificName.textContent = data.scientific_name || "Unknown Scientific Name";
     
+    const activeLang = localStorage.getItem("agrinexus_lang") || "en";
+    
     const confPct = Math.round((data.confidence || 1.0) * 100);
-    reportConfidenceBadge.textContent = `${confPct}% Confidence`;
+    reportConfidenceBadge.textContent = activeLang === 'ur' ? `${confPct}% مطابقت` : `${confPct}% Match`;
     
     const score = Math.round(data.health_score || 100);
     reportHealthScore.textContent = `${score}/100`;
-    reportHealthCondition.textContent = data.condition || "Healthy";
+    
+    let conditionText = data.condition || "Healthy";
+    if (activeLang === 'ur') {
+      const lowerCond = conditionText.toLowerCase();
+      if (lowerCond.includes('severely diseased')) {
+        conditionText = "شدید بیمار";
+      } else if (lowerCond.includes('diseased')) {
+        conditionText = "بیمار";
+      } else if (lowerCond.includes('unhealthy')) {
+        conditionText = "غیر صحت بخش";
+      } else if (lowerCond.includes('healthy')) {
+        conditionText = "صحت مند";
+      }
+    }
+    reportHealthCondition.textContent = conditionText;
     
     // Style health condition badge color class dynamically
     reportHealthCondition.className = "badge";
@@ -583,8 +620,12 @@ function initPlantHealthUI() {
     // Split issues by comma and render as tags
     const diseases = (data.disease_detected || "None").split(',').map(d => d.trim()).filter(Boolean);
     reportDetectedDiseases.innerHTML = diseases.map(d => {
+      let displayName = d;
+      if (activeLang === 'ur' && displayName.toLowerCase() === 'none') {
+        displayName = "کوئی نہیں";
+      }
       const isOk = d.toLowerCase() === 'none';
-      return `<span class="badge ${isOk ? 'badge-green' : 'badge-yellow'}"><i class="fa-solid ${isOk ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${d}</span>`;
+      return `<span class="badge ${isOk ? 'badge-green' : 'badge-yellow'}"><i class="fa-solid ${isOk ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${displayName}</span>`;
     }).join('');
     
     // Parse recommendation details object safely
@@ -595,22 +636,34 @@ function initPlantHealthUI() {
       rec = { summary: data.recommendations || "" };
     }
     
-    reportSummary.textContent = rec.summary || "No diagnostic pathology notes provided.";
+    reportSummary.textContent = rec.summary || (activeLang === 'ur' ? "اے آئی تشخیص کے نتائج فراہم نہیں کیے گئے۔" : "No diagnostic pathology notes provided.");
     reportCauses.textContent = rec.causes || "N/A";
     reportPrevention.textContent = rec.prevention || "N/A";
     
     const severity = (rec.severity || "Low").toUpperCase();
-    reportSeverityLevel.textContent = severity;
+    let severityText = severity;
+    if (activeLang === 'ur') {
+      if (severity === 'LOW') severityText = "کم";
+      else if (severity === 'MEDIUM') severityText = "درمیانہ";
+      else if (severity === 'HIGH') severityText = "شدید";
+    }
+    reportSeverityLevel.textContent = severityText;
     reportSeverityLevel.style.color = severity === 'HIGH' ? 'var(--red-400)' : (severity === 'MEDIUM' ? 'var(--yellow-500)' : 'var(--emerald-400)');
     
     // Treatment checklist items split by semicolon
     const treatments = (rec.treatment || "No treatment needed.").split(';').map(t => t.trim()).filter(Boolean);
-    reportTreatment.innerHTML = treatments.map(t => `
-      <div style="display: flex; align-items: start; gap: 8px; font-size: 0.85rem;">
-        <i class="fa-solid fa-square-check text-teal-400" style="margin-top: 3px;"></i>
-        <span>${t}</span>
-      </div>
-    `).join('');
+    reportTreatment.innerHTML = treatments.map(t => {
+      let displayTreat = t;
+      if (activeLang === 'ur' && displayTreat.toLowerCase() === 'no treatment needed.') {
+        displayTreat = "کسی علاج کی ضرورت نہیں ہے۔";
+      }
+      return `
+        <div style="display: flex; align-items: start; gap: 8px; font-size: 0.85rem;">
+          <i class="fa-solid fa-square-check text-teal-400" style="margin-top: 3px;"></i>
+          <span>${displayTreat}</span>
+        </div>
+      `;
+    }).join('');
   }
 
   // Reload history logs on click
@@ -628,6 +681,14 @@ function initPlantHealthUI() {
       showToast("Failed to fetch report details", true);
     }
   };
+
+  // Re-translate current report and list when language is changed
+  document.addEventListener('languageChanged', () => {
+    if (lastPlantAnalysisData) {
+      renderPlantAnalysisReport(lastPlantAnalysisData);
+    }
+    loadPlantHistory();
+  });
 }
 
 async function loadPlantHistory() {
@@ -637,12 +698,16 @@ async function loadPlantHistory() {
   try {
     const list = await apiRequest('/plant/history');
     if (!list || !list.length) {
+      const activeLang = localStorage.getItem("agrinexus_lang") || "en";
+      const noHistText = activeLang === 'ur' ? "کوئی تشخیصی ریکارڈ دستیاب نہیں ہے۔" : "No diagnostic history available.";
       tableBody.innerHTML = `
         <tr class="empty-row">
-          <td colspan="7" class="text-center text-muted" style="padding: 24px;">No diagnostic history available.</td>
+          <td colspan="7" class="text-center text-muted" style="padding: 24px;">${noHistText}</td>
         </tr>`;
       return;
     }
+    
+    const activeLang = localStorage.getItem("agrinexus_lang") || "en";
     
     tableBody.innerHTML = list.map(item => {
       // Parse dates nicely
@@ -656,6 +721,24 @@ async function loadPlantHistory() {
       if (cond.includes('unhealthy')) badgeColor = "badge-yellow";
       if (cond.includes('diseased') || cond.includes('severe')) badgeColor = "badge-red";
       
+      let displayCond = item.condition || "Healthy";
+      if (activeLang === 'ur') {
+        if (displayCond.toLowerCase().includes('severely diseased')) {
+          displayCond = "شدید بیمار";
+        } else if (displayCond.toLowerCase().includes('diseased')) {
+          displayCond = "بیمار";
+        } else if (displayCond.toLowerCase().includes('unhealthy')) {
+          displayCond = "غیر صحت بخش";
+        } else if (displayCond.toLowerCase().includes('healthy')) {
+          displayCond = "صحت مند";
+        }
+      }
+      
+      let displayDiseases = item.disease_detected || "None";
+      if (activeLang === 'ur' && displayDiseases.toLowerCase() === 'none') {
+        displayDiseases = "کوئی نہیں";
+      }
+      
       return `
         <tr>
           <td>
@@ -667,17 +750,17 @@ async function loadPlantHistory() {
           </td>
           <td>${confVal}%</td>
           <td>
-            <span class="badge ${badgeColor}">${item.condition} (${scoreVal}/100)</span>
+            <span class="badge ${badgeColor}">${displayCond} (${scoreVal}/100)</span>
           </td>
           <td>
-            <div style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.disease_detected}">
-              ${item.disease_detected}
+            <div style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${displayDiseases}">
+              ${displayDiseases}
             </div>
           </td>
           <td class="text-secondary">${dateStr}</td>
           <td>
             <button class="btn btn-ghost btn-sm" onclick="viewPlantReportDetail(${item.id})">
-              <i class="fa-solid fa-eye"></i> View
+              <i class="fa-solid fa-eye"></i> ${activeLang === 'ur' ? 'دیکھیں' : 'View'}
             </button>
           </td>
         </tr>
@@ -689,7 +772,8 @@ async function loadPlantHistory() {
 }
 
 // Bind custom initialization hook
-document.addEventListener('DOMContentLoaded', () => {
+function runDashboardInit() {
+  initializeDashboardPart1();
   initPlantHealthUI();
   
   // Load initial history when Plant Health tab is shown
@@ -697,5 +781,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tabBtn) {
     tabBtn.addEventListener('click', loadPlantHistory);
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", runDashboardInit);
+} else {
+  runDashboardInit();
+}
+
+
+
 

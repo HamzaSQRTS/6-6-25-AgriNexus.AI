@@ -94,6 +94,7 @@ async def analyze_plant(
     plant_name = payload.get("plant_name")
     scientific_name = payload.get("scientific_name", "")
     confidence = payload.get("confidence", 1.0)
+    lang = payload.get("lang", "en")
     
     if not upload_id or not plant_name:
         raise HTTPException(status_code=400, detail="Missing required upload_id or plant_name.")
@@ -118,7 +119,7 @@ async def analyze_plant(
         raise HTTPException(status_code=500, detail=f"Failed to read stored image: {e}")
         
     # Call OpenAI vision API for health details
-    health_res = await PlantService.analyze_health(image_bytes, plant_name)
+    health_res = await PlantService.analyze_health(image_bytes, plant_name, lang=lang)
     
     # Save results to sqlite database
     cursor.execute(
