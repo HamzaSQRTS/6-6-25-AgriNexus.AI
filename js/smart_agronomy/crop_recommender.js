@@ -5,9 +5,9 @@
 
 import { train, predictDistribution, toJSON, fromJSON } from './decision_tree.js';
 
-const MODEL_KEY = 'agrinexus_ml_model_v2';
-const META_KEY  = 'agrinexus_ml_model_meta_v2';
-const EXTRA_DATA_KEY = 'agrinexus_ml_extra_data_v2';
+const MODEL_KEY = 'agrinexus_ml_model_v5';
+const META_KEY  = 'agrinexus_ml_model_meta_v5';
+const EXTRA_DATA_KEY = 'agrinexus_ml_extra_data_v5';
 
 let cachedTree = null;
 let cachedMeta = null;          // { accuracy, trainedAt, rowCount }

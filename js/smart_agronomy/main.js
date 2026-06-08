@@ -276,13 +276,8 @@ function runCropRecommender(classification, soilGrids, weather) {
   const features = {
     temperature: weather.temp,
     humidity: weather.humidity,
-    rainfall: weather.rain || 50,
-    soil_ph: inputs.ph,
-    soil_moisture: inputs.moisture,
-    organic_matter: inputs.organicMatter,
-    drainage: inputs.drainage,
-    soil_type: classification.type,
-    region: inputs.region
+    soil_moisture: weather.soil_moisture,
+    soil_type: classification.type
   };
 
   let top3 = [];
