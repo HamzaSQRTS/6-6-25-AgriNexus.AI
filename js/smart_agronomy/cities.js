@@ -28,6 +28,16 @@ function readPersisted(regions) {
   try {
     const id = localStorage.getItem(STORAGE_KEY);
     if (id && regions.some((r) => r.id === id)) return id;
+
+    // Default to the logged-in user's city if nothing is persisted yet
+    const userStr = localStorage.getItem('agrinexus_user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user && user.city) {
+        const found = regions.find(r => r.name.toLowerCase() === user.city.toLowerCase() || r.id.toLowerCase() === user.city.toLowerCase());
+        if (found) return found.id;
+      }
+    }
   } catch (e) { /* localStorage may be disabled */ }
   return regions[0]?.id || null;
 }

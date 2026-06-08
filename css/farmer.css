@@ -1185,6 +1185,82 @@
   }
 }
 
+/* Soil & Plant Diagnostics CSS Enhancements */
+.plant-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--border-dim);
+  border-radius: 12px;
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+  transition: all 0.25rem cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.plant-upload-zone:hover {
+  border-color: var(--teal-400);
+  background: rgba(20, 184, 166, 0.02);
+  transform: scale(0.995);
+}
+
+.plant-upload-zone .upload-icon {
+  font-size: 2.5rem;
+  color: var(--teal-400);
+  margin-bottom: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.plant-upload-zone:hover .upload-icon {
+  transform: translateY(-2px);
+}
+
+.plant-upload-zone .upload-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: #fff;
+}
+
+.plant-upload-zone .upload-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Jump To Hover State Animations */
+.jump-to-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.jump-to-card:hover {
+  background: rgba(20, 184, 166, 0.05) !important;
+  border-color: var(--teal-500) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Soil Diagnostics Score bar animations */
+.soil-score-fill {
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Weather shelf layout responsive adaptation */
+@media (max-width: 992px) {
+  .weather-shelf-panel {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 1rem;
+  }
+  .weather-widget-card {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+}
+
+
 
 
 

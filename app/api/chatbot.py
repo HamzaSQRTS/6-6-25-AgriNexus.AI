@@ -106,7 +106,7 @@ async def chat_query(
                 logger.warning(f"FAISS search failed: {search_err}")
 
         # Append context if present
-        user_city = getattr(current_user, "city", None) or query_in.city
+        user_city = query_in.city or getattr(current_user, "city", None)
         user_acres = getattr(current_user, "acres", None) or query_in.land_size
 
         if user_city:
