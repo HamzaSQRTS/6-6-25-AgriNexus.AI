@@ -25,6 +25,5 @@ torch==2.2.0
 torchvision==0.17.0
 python-dotenv==1.0.1
 pymongo==4.6.1
-pdfplumber==0.11.9
-pdfminer.six==20231228
+pdfplumber==0.11.0
 pymupdf==1.26.5
