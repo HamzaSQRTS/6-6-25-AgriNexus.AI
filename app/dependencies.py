@@ -18,6 +18,8 @@ def _synthetic_user_out(email: str) -> UserOut:
         full_name=email.split("@")[0].replace(".", " ").title(),
         role=role,
         is_active=True,
+        city="Karachi",
+        acres=5.0,
     )
 
 

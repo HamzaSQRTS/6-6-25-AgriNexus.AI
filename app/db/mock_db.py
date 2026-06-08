@@ -142,7 +142,9 @@ for idx, u in enumerate(users_to_seed):
         "full_name": u["full_name"],
         "role": u["role"],
         "is_active": True,
-        "created_at": u["created_at"]
+        "created_at": u["created_at"],
+        "city": u.get("city", "Karachi" if u["role"] == "farmer" else None),
+        "acres": u.get("acres", 10.0 if u["role"] == "farmer" else None)
     })
 
 # Seed 12 uploads

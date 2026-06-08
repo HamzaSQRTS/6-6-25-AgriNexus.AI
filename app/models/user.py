@@ -12,6 +12,8 @@ class UserBase(BaseModel):
     full_name: str
     role: UserRole = UserRole.FARMER
     is_active: bool = True
+    city: Optional[str] = None
+    acres: Optional[float] = None
 
 class UserCreate(UserBase):
     password: str

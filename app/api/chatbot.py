@@ -106,10 +106,31 @@ async def chat_query(
                 logger.warning(f"FAISS search failed: {search_err}")
 
         # Append context if present
-        if query_in.city:
-            context_parts.append(f"District/City: {query_in.city}")
-        if query_in.land_size:
-            context_parts.append(f"Land Size: {query_in.land_size} Acres")
+        user_city = getattr(current_user, "city", None) or query_in.city
+        user_acres = getattr(current_user, "acres", None) or query_in.land_size
+
+        if user_city:
+            context_parts.append(f"District/City: {user_city}")
+        if user_acres:
+            context_parts.append(f"Land Size: {user_acres} Acres")
+        
+        # Auto-fetch weather context if query is weather-related and city is available
+        weather_keywords = ["weather", "rain", "temperature", "forecast", "humidity", "wind", "monsoon", "climate", "storm", "hot", "cold", "degree"]
+        if user_city and any(k in query.lower() for k in weather_keywords):
+            try:
+                from app.api.weather import get_weather
+                weather_info = await get_weather(city=user_city)
+                if weather_info:
+                    weather_desc = (
+                        f"Current Weather in {user_city}: "
+                        f"{weather_info.get('temperature')}°C, "
+                        f"{weather_info.get('condition')} ({weather_info.get('description')}), "
+                        f"Humidity: {weather_info.get('humidity')}%, "
+                        f"Wind Speed: {weather_info.get('windSpeed')} m/s"
+                    )
+                    context_parts.append(f"WEATHER CONTEXT: {weather_desc}")
+            except Exception as weather_err:
+                logger.warning(f"Auto weather fetch failed: {weather_err}")
         
         full_query = query
         if context_parts:

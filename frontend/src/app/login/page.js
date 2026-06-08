@@ -21,6 +21,26 @@ export default function LoginPage() {
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regCity, setRegCity] = useState('');
+  const [regAcres, setRegAcres] = useState('');
+  const [regions, setRegions] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/data/regions.json');
+        if (res.ok) {
+          const data = await res.json();
+          setRegions(data || []);
+          if (data && data.length > 0) {
+            setRegCity(data[0].name);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load regions inside signup page.js', err);
+      }
+    })();
+  }, []);
 
   const handleRoleChange = (role) => {
     setLoginRole(role);
@@ -94,7 +114,9 @@ export default function LoginPage() {
           email: regEmail,
           password: regPassword,
           full_name: regName,
-          role: regRole
+          role: regRole,
+          city: regCity,
+          acres: regAcres ? parseFloat(regAcres) : null
         })
       });
 
@@ -242,6 +264,40 @@ export default function LoginPage() {
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                 />
+              </div>
+              <div className="form-group">
+                <label className="form-label">City / Location</label>
+                <select 
+                  className="form-input" 
+                  style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-dim)', color: '#fff', width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+                  required 
+                  value={regCity}
+                  onChange={(e) => setRegCity(e.target.value)}
+                >
+                  {regions.map((r) => (
+                    <option key={r.id} value={r.name} style={{ background: 'var(--bg-surface-elevated)', color: '#fff' }}>
+                      {r.name} ({r.country})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group" style={{ marginTop: '10px' }}>
+                <label className="form-label">Land Size (Acres)</label>
+                <select 
+                  className="form-input" 
+                  style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-dim)', color: '#fff', width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+                  required 
+                  value={regAcres}
+                  onChange={(e) => setRegAcres(e.target.value)}
+                >
+                  <option value="" disabled>Select land size...</option>
+                  <option value="1">Less than 1 Acre</option>
+                  <option value="5">1 - 5 Acres</option>
+                  <option value="10">5 - 10 Acres</option>
+                  <option value="20">10 - 20 Acres</option>
+                  <option value="50">20 - 50 Acres</option>
+                  <option value="100">50+ Acres</option>
+                </select>
               </div>
 
               <button type="submit" className="auth-submit" style={{ marginTop: '8px' }} disabled={isLoading}>

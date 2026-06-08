@@ -2,62 +2,12 @@
 import { setupCommonUI, apiRequest, showToast } from './api.js';
 import { initSmartAgronomy } from './smart_agronomy/main.js';
 
-let yieldChart = null;
-let nutrientChart = null;
 const uploadedDocuments = new Map();
 
 function destroyCharts() {
-  if (yieldChart) {
-    yieldChart.destroy();
-    yieldChart = null;
-  }
-  if (nutrientChart) {
-    nutrientChart.destroy();
-    nutrientChart = null;
-  }
 }
 
 function renderCharts(analytics) {
-  destroyCharts();
-  const y = analytics?.charts?.yield;
-  const n = analytics?.charts?.nutrients;
-  const ctxYield = document.getElementById('yieldChart');
-  const ctxNutrient = document.getElementById('nutrientChart');
-  if (ctxYield && y?.labels?.length) {
-    yieldChart = new Chart(ctxYield, {
-      type: 'bar',
-      data: {
-        labels: y.labels,
-        datasets: [
-          {
-            label: y.title || 'Yield index',
-            data: y.data,
-            backgroundColor: '#14b8a6',
-            borderRadius: 6,
-          },
-        ],
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-    });
-  }
-  if (ctxNutrient && n?.labels?.length) {
-    nutrientChart = new Chart(ctxNutrient, {
-      type: 'radar',
-      data: {
-        labels: n.labels,
-        datasets: [
-          {
-            label: n.title || 'Nutrients',
-            data: n.data,
-            backgroundColor: 'rgba(16, 185, 129, 0.2)',
-            borderColor: '#10b981',
-            pointBackgroundColor: '#10b981',
-          },
-        ],
-      },
-      options: { responsive: true, maintainAspectRatio: false },
-    });
-  }
 }
 
 function renderUploadTable(recent) {
@@ -85,33 +35,16 @@ function renderUploadTable(recent) {
 }
 
 function applyAnalyticsToPage(analytics) {
-  const empty = document.getElementById('analytics-empty-state');
   const content = document.getElementById('analytics-content');
-  if (!empty || !content) return;
+  if (!content) return;
+
+  content.classList.remove('hidden');
 
   if (!analytics || analytics.upload_count === 0) {
-    empty.classList.remove('hidden');
-    content.classList.add('hidden');
     destroyCharts();
     return;
   }
 
-  empty.classList.add('hidden');
-  content.classList.remove('hidden');
-
-  const s = analytics.summary || {};
-  const elH = document.getElementById('stat-health');
-  const elM = document.getElementById('stat-moisture');
-  const elT = document.getElementById('stat-temp');
-  if (elH) elH.textContent = s.crop_health_label || '—';
-  if (elM) elM.textContent = s.soil_moisture_label || '—';
-  if (elT) elT.textContent = s.temperature_label || '—';
-
-  const titles = content.querySelectorAll('.chart-card .chart-title');
-  if (titles[0] && analytics.charts?.yield?.title) titles[0].textContent = analytics.charts.yield.title;
-  if (titles[1] && analytics.charts?.nutrients?.title) titles[1].textContent = analytics.charts.nutrients.title;
-
-  renderCharts(analytics);
   renderUploadTable(analytics.recent_uploads);
 }
 
@@ -129,6 +62,75 @@ async function refreshFarmerAnalytics() {
 
 document.addEventListener('DOMContentLoaded', () => {
   setupCommonUI();
+  
+  // Set current date on dashboard
+  const dateEl = document.getElementById('dashboard-current-date');
+  if (dateEl) {
+    dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // Load user name greeting and weather details
+  const loadUserAndWeather = async () => {
+    try {
+      const user = await apiRequest('/auth/me');
+      if (user) {
+        localStorage.setItem('agrinexus_user', JSON.stringify({
+          email: user.email,
+          role: user.role,
+          name: user.full_name,
+          city: user.city,
+          acres: user.acres
+        }));
+        
+        const nameEl = document.getElementById('farmer-greet-name');
+        if (nameEl) nameEl.textContent = user.full_name || user.email;
+        
+        const nameDisplay = document.getElementById('user-name-display');
+        const initialDisplay = document.getElementById('user-initial');
+        if (nameDisplay) nameDisplay.textContent = user.full_name || user.email;
+        if (initialDisplay && (user.full_name || user.email)) {
+          initialDisplay.textContent = (user.full_name || user.email).charAt(0).toUpperCase();
+        }
+
+        if (user.city) {
+          const weather = await apiRequest(`/weather?city=${encodeURIComponent(user.city)}`);
+          if (weather) {
+            const tempEl = document.getElementById('dash-weather-temp');
+            const condEl = document.getElementById('dash-weather-cond');
+            const locEl = document.getElementById('dash-weather-location');
+            const humEl = document.getElementById('dash-weather-humidity');
+            const windEl = document.getElementById('dash-weather-wind');
+            const iconHost = document.getElementById('dash-weather-icon');
+            
+            if (tempEl) tempEl.textContent = Math.round(weather.temperature);
+            if (condEl) condEl.textContent = `${weather.condition} (${weather.description})`;
+            if (locEl) locEl.textContent = `${weather.city}, ${weather.country || 'PK'}`;
+            if (humEl) humEl.textContent = weather.humidity;
+            if (windEl) windEl.textContent = weather.windSpeed;
+            
+            if (iconHost) {
+              iconHost.innerHTML = `<img src="https://openweathermap.org/img/wn/${weather.icon}@2x.png" alt="Weather icon" style="width: 48px; height: 48px; object-fit: contain;">`;
+            }
+          }
+        } else {
+          const locEl = document.getElementById('dash-weather-location');
+          if (locEl) locEl.textContent = "No city set in profile";
+          const condEl = document.getElementById('dash-weather-cond');
+          if (condEl) condEl.textContent = "N/A";
+        }
+      }
+    } catch (err) {
+      console.warn('Dashboard greeting/weather load failed:', err);
+      const condEl = document.getElementById('dash-weather-cond');
+      if (condEl) condEl.textContent = 'Weather Unavailable';
+      const locEl = document.getElementById('dash-weather-location');
+      if (locEl) locEl.textContent = 'Check API settings';
+      const iconHost = document.getElementById('dash-weather-icon');
+      if (iconHost) iconHost.innerHTML = `<i class="fa-solid fa-cloud" style="color: var(--text-muted); font-size: 1.5rem;"></i>`;
+    }
+  };
+  loadUserAndWeather();
+
   refreshFarmerAnalytics();
   
   // Initialize Smart Agronomy view features
@@ -180,6 +182,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (topbarTitle) topbarTitle.innerHTML = item.innerHTML;
       if (item.dataset.target === 'view-analytics') {
         await refreshFarmerAnalytics();
+      }
+    });
+  });
+
+  // Jump To navigation logic
+  document.querySelectorAll('.nav-jump-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      const navItem = document.querySelector(`.sidebar-nav .nav-item[data-target="${target}"]`);
+      if (navItem) {
+        navItem.click();
       }
     });
   });
