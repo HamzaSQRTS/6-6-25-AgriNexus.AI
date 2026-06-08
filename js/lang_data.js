@@ -53,7 +53,7 @@ window.AGRINEXUS_TRANSLATIONS = {
     dash_weather_location: "Loading location...",
     
     // Jump To
-    jump_title: "Jump To;",
+    jump_title: "Jump To:",
     jump_chat_title: "AI Advisory",
     jump_chat_desc: "Ask AgriNexus AI about weather updates, soil quality, or crop tips.",
     jump_agronomy_title: "Smart Agronomy",
@@ -198,7 +198,7 @@ window.AGRINEXUS_TRANSLATIONS = {
     dash_weather_location: "مقام لوڈ ہو رہا ہے...",
     
     // Jump To
-    jump_title: "فوری رسائی;",
+    jump_title: "فوری رسائی:",
     jump_chat_title: "اے آئی ایڈوائزری",
     jump_chat_desc: "ایگری نیکسس اے آئی سے موسم کی معلومات، مٹی کی کوالٹی یا فصل کے بارے میں پوچھیں۔",
     jump_agronomy_title: "اسمارٹ ایگرونومی",
