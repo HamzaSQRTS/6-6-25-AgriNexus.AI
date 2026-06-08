@@ -21,8 +21,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/global.css">
-  <link rel="stylesheet" href="css/farmer.css">
+  <link rel="stylesheet" href="css/global.css?v=3">
+  <link rel="stylesheet" href="css/farmer.css?v=3">
 </head>
 <body>
 
@@ -569,9 +569,11 @@
 
       // Theme Toggler
       const themeToggleBtn = document.getElementById("btn-theme-toggle");
+      console.log("Farmer themeToggleBtn found:", themeToggleBtn);
       let currentTheme = localStorage.getItem("agrinexus_theme") || "dark";
 
       function applyTheme(theme) {
+        console.log("Applying theme:", theme);
         document.documentElement.setAttribute("data-theme", theme);
         if (themeToggleBtn) {
           const icon = themeToggleBtn.querySelector("i");
@@ -586,6 +588,7 @@
 
       if (themeToggleBtn) {
         themeToggleBtn.addEventListener("click", () => {
+          console.log("Theme toggle button clicked!");
           currentTheme = currentTheme === "dark" ? "light" : "dark";
           localStorage.setItem("agrinexus_theme", currentTheme);
           applyTheme(currentTheme);

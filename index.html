@@ -19,7 +19,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
   
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/landing.css?v=3">
   <style>
     /* RTL Adjustments */
     html[dir="rtl"] {
@@ -196,9 +196,11 @@
       
       // Theme toggler
       const themeToggleBtn = document.getElementById("btn-theme-toggle");
+      console.log("Landing themeToggleBtn found:", themeToggleBtn);
       let currentTheme = localStorage.getItem("agrinexus_theme") || "dark";
       
       function applyTheme(theme) {
+        console.log("Applying theme on landing:", theme);
         document.documentElement.setAttribute("data-theme", theme);
         if (themeToggleBtn) {
           const icon = themeToggleBtn.querySelector("i");
@@ -210,6 +212,7 @@
       
       if (themeToggleBtn) {
         themeToggleBtn.addEventListener("click", () => {
+          console.log("Theme toggle button clicked on landing!");
           currentTheme = currentTheme === "dark" ? "light" : "dark";
           localStorage.setItem("agrinexus_theme", currentTheme);
           applyTheme(currentTheme);

@@ -29,7 +29,7 @@
   --font-display: 'Outfit', sans-serif;
 }
 
-[data-theme="light"] {
+:root[data-theme="light"] {
   --bg-void: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #f1f5f9;

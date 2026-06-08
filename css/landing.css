@@ -1,5 +1,5 @@
 /* landing.css */
-@import url('global.css');
+@import url('global.css?v=3');
 
 .floating-nav-container {
   position: fixed;
